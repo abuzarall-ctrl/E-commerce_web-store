@@ -64,7 +64,7 @@ export default function LoginPage() {
       {/* Background image */}
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: 'url(https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80)',
+        backgroundImage: 'url(https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=1920&q=80)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         filter: 'brightness(0.35)',

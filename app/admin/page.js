@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
+import { FiSettings } from 'react-icons/fi'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -96,7 +97,9 @@ export default function AdminPanel() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div>
-            <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)' }}>🛠️ Admin Panel</h1>
+            <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FiSettings size={26} color="var(--accent)" /> Admin Panel
+            </h1>
             <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>{products.length} products total</p>
           </div>
           <button onClick={() => { resetForm(); setShowForm(true) }} style={{
