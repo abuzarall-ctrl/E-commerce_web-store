@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { motion } from 'framer-motion'
+import { FiCheckCircle, FiShoppingBag, FiDollarSign, FiArrowRight, FiHome } from 'react-icons/fi'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 
@@ -31,6 +33,11 @@ const labelStyle = {
   marginBottom: '6px'
 }
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const [items, setItems] = useState([])
@@ -40,13 +47,7 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState(null)
   const [error, setError] = useState('')
 
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    city: '',
-    notes: ''
-  })
+  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', notes: '' })
 
   useEffect(() => {
     const raw = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -56,7 +57,6 @@ export default function CheckoutPage() {
       else map[p.id] = { ...p, qty: 1 }
     }
     setItems(Object.values(map))
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setUser(session.user)
     })
@@ -69,7 +69,6 @@ export default function CheckoutPage() {
   const totalItems = items.reduce((s, i) => s + i.qty, 0)
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
-
   const focusBorder = (e) => { e.target.style.borderColor = 'var(--accent)' }
   const blurBorder = (e) => { e.target.style.borderColor = 'var(--border)' }
 
@@ -87,26 +86,16 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     const err = validate()
     if (err) { setError(err); return }
-
     setError('')
     setPlacing(true)
-
     const products = items.map(i => ({
-      id: i.id,
-      name: i.name,
-      category: i.category,
-      price: i.price,
-      discount: i.discount,
-      finalPrice: Math.round(discounted(i)),
-      qty: i.qty,
-      image_url: i.image_url
+      id: i.id, name: i.name, category: i.category,
+      price: i.price, discount: i.discount,
+      finalPrice: Math.round(discounted(i)), qty: i.qty, image_url: i.image_url
     }))
-
     const { data, error: dbErr } = await supabase.from('orders').insert({
       user_id: user?.id || null,
-      products,
-      total: subtotal,
-      status: 'pending',
+      products, total: subtotal, status: 'pending',
       customer_name: form.name.trim(),
       customer_phone: form.phone.trim(),
       customer_address: form.address.trim(),
@@ -114,11 +103,7 @@ export default function CheckoutPage() {
       notes: form.notes.trim() || null
     }).select('id').single()
 
-    if (dbErr) {
-      setError('Failed to place order. Please try again.')
-      setPlacing(false)
-      return
-    }
+    if (dbErr) { setError('Failed to place order. Please try again.'); setPlacing(false); return }
 
     localStorage.removeItem('cart')
     window.dispatchEvent(new Event('cartUpdated'))
@@ -127,25 +112,26 @@ export default function CheckoutPage() {
     setPlacing(false)
   }
 
-  // ── Success screen ──────────────────────────────────────────────────────────
+  // ── Success ─────────────────────────────────────────────────────────────────
   if (success) {
     return (
       <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          padding: '48px 24px', textAlign: 'center'
-        }}>
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '20px',
-            padding: '48px 40px',
-            maxWidth: '480px',
-            width: '100%'
-          }}>
-            <div style={{ fontSize: '56px', marginBottom: '20px' }}>🎉</div>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border)',
+              borderRadius: '20px', padding: '48px 40px',
+              maxWidth: '480px', width: '100%', textAlign: 'center'
+            }}>
+            <motion.div
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}>
+              <FiCheckCircle size={56} color="var(--accent)" style={{ marginBottom: '20px' }} />
+            </motion.div>
             <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px' }}>
               Order Placed!
             </h1>
@@ -153,260 +139,182 @@ export default function CheckoutPage() {
               Thank you for your order. We'll confirm via WhatsApp or call shortly.
             </p>
             <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '28px' }}>
-              Order ID: <span style={{ color: 'var(--accent)', fontWeight: '600', fontFamily: 'monospace' }}>
+              Order ID:{' '}
+              <span style={{ color: 'var(--accent)', fontWeight: '600', fontFamily: 'monospace' }}>
                 {orderId?.slice(0, 8)?.toUpperCase()}
               </span>
             </p>
 
             <div style={{
-              background: 'var(--bg-surface2)',
-              border: '1px solid var(--border)',
-              borderRadius: '10px',
-              padding: '16px',
-              marginBottom: '28px',
-              textAlign: 'left'
+              background: 'var(--bg-surface2)', border: '1px solid var(--border)',
+              borderRadius: '10px', padding: '16px', marginBottom: '28px',
+              display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left'
             }}>
-              <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '4px' }}>Payment method</p>
-              <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>
-                💵 Cash on Delivery
-              </p>
+              <FiDollarSign size={20} color="var(--accent)" />
+              <div>
+                <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '2px' }}>Payment method</p>
+                <p style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)' }}>Cash on Delivery</p>
+              </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={() => router.push('/shop')}
                 style={{
                   width: '100%', padding: '14px',
-                  background: 'var(--accent)', color: 'var(--bg-primary)',
+                  background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
                   border: 'none', borderRadius: '10px',
-                  fontSize: '15px', fontWeight: '700', cursor: 'pointer'
+                  fontSize: '15px', fontWeight: '700', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
                 }}>
-                Continue Shopping
-              </button>
+                <FiShoppingBag size={16} /> Continue Shopping
+              </motion.button>
               <button
                 onClick={() => router.push('/')}
                 style={{
                   width: '100%', padding: '12px',
                   background: 'transparent', color: 'var(--text-faint)',
                   border: '1px solid var(--border)', borderRadius: '10px',
-                  fontSize: '13px', cursor: 'pointer'
+                  fontSize: '13px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
                 }}>
-                Back to Home
+                <FiHome size={14} /> Back to Home
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
         <Footer />
       </main>
     )
   }
 
-  // ── Empty cart ──────────────────────────────────────────────────────────────
+  // ── Empty cart ───────────────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
       <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '48px 24px'
-        }}>
-          <span style={{ fontSize: '48px' }}>🛒</span>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '48px 24px' }}>
+          <FiShoppingBag size={48} color="var(--text-faint)" style={{ opacity: 0.4 }} />
           <p style={{ fontSize: '18px', color: 'var(--text-primary)', fontWeight: '600' }}>Your cart is empty</p>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             onClick={() => router.push('/shop')}
             style={{
-              padding: '12px 28px',
-              background: 'var(--accent)', color: 'var(--bg-primary)',
-              border: 'none', borderRadius: '8px',
-              fontSize: '14px', fontWeight: '700', cursor: 'pointer'
+              padding: '12px 28px', background: 'var(--gradient-accent)',
+              color: 'var(--bg-primary)', border: 'none', borderRadius: '8px',
+              fontSize: '14px', fontWeight: '700', cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(212,163,115,0.25)'
             }}>
             Browse Products
-          </button>
+          </motion.button>
         </div>
         <Footer />
       </main>
     )
   }
 
-  // ── Checkout form ───────────────────────────────────────────────────────────
+  // ── Checkout form ────────────────────────────────────────────────────────────
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
 
       <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
 
-        {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>
-            Checkout
-          </h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-faint)' }}>
-            Fill in your delivery details below
-          </p>
-        </div>
+        <motion.div variants={fadeUp} initial="hidden" animate="visible">
+          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>Checkout</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '32px' }}>Fill in your delivery details below</p>
+        </motion.div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '32px',
-          alignItems: 'start'
-        }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', alignItems: 'start' }}>
 
-          {/* ── Left: Delivery Form ── */}
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '16px',
-            padding: '28px'
-          }}>
-            <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>
-              Delivery Information
-            </h2>
+          {/* Form */}
+          <motion.div
+            variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.1 }}
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>Delivery Information</h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-              {/* Name */}
               <div>
                 <label style={labelStyle}>Full Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ahmed Khan"
-                  value={form.name}
-                  onChange={set('name')}
-                  onFocus={focusBorder}
-                  onBlur={blurBorder}
-                  style={inputStyle}
-                />
+                <input type="text" placeholder="e.g. Ahmed Khan" value={form.name} onChange={set('name')} onFocus={focusBorder} onBlur={blurBorder} style={inputStyle} />
               </div>
-
-              {/* Phone */}
               <div>
                 <label style={labelStyle}>Phone Number *</label>
-                <input
-                  type="tel"
-                  placeholder="03001234567"
-                  value={form.phone}
-                  onChange={set('phone')}
-                  onFocus={focusBorder}
-                  onBlur={blurBorder}
-                  style={inputStyle}
-                />
+                <input type="tel" placeholder="03001234567" value={form.phone} onChange={set('phone')} onFocus={focusBorder} onBlur={blurBorder} style={inputStyle} />
               </div>
-
-              {/* City */}
               <div>
                 <label style={labelStyle}>City *</label>
-                <select
-                  value={form.city}
-                  onChange={set('city')}
-                  onFocus={focusBorder}
-                  onBlur={blurBorder}
-                  style={{ ...inputStyle, cursor: 'pointer' }}>
+                <select value={form.city} onChange={set('city')} onFocus={focusBorder} onBlur={blurBorder} style={{ ...inputStyle, cursor: 'pointer' }}>
                   <option value="">Select your city</option>
                   {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-
-              {/* Address */}
               <div>
                 <label style={labelStyle}>Delivery Address *</label>
-                <textarea
-                  placeholder="House/flat number, street, area..."
-                  value={form.address}
-                  onChange={set('address')}
-                  onFocus={focusBorder}
-                  onBlur={blurBorder}
-                  rows={3}
-                  style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-                />
+                <textarea placeholder="House/flat number, street, area..." value={form.address} onChange={set('address')} onFocus={focusBorder} onBlur={blurBorder} rows={3} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
-
-              {/* Notes */}
               <div>
                 <label style={labelStyle}>Order Notes <span style={{ color: 'var(--text-faint)', fontWeight: '400' }}>(optional)</span></label>
-                <textarea
-                  placeholder="Any special instructions..."
-                  value={form.notes}
-                  onChange={set('notes')}
-                  onFocus={focusBorder}
-                  onBlur={blurBorder}
-                  rows={2}
-                  style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
-                />
+                <textarea placeholder="Any special instructions..." value={form.notes} onChange={set('notes')} onFocus={focusBorder} onBlur={blurBorder} rows={2} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
             </div>
 
-            {/* Payment method badge */}
+            {/* COD badge */}
             <div style={{
-              marginTop: '24px',
-              background: 'var(--bg-surface2)',
-              border: '1px solid var(--border)',
-              borderRadius: '10px',
-              padding: '14px 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
+              marginTop: '24px', background: 'var(--bg-surface2)',
+              border: '1px solid var(--border)', borderRadius: '10px',
+              padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px'
             }}>
-              <span style={{ fontSize: '20px' }}>💵</span>
-              <div>
+              <FiDollarSign size={20} color="var(--accent)" />
+              <div style={{ flex: 1 }}>
                 <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>Cash on Delivery</p>
                 <p style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Pay when your order arrives</p>
               </div>
               <span style={{
-                marginLeft: 'auto',
                 background: 'var(--badge-green)', color: 'var(--badge-green-text)',
-                fontSize: '11px', fontWeight: '700',
-                padding: '3px 8px', borderRadius: '20px'
+                fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px'
               }}>Selected</span>
             </div>
 
-            {/* Error */}
             {error && (
               <div style={{
-                marginTop: '16px',
-                background: 'rgba(226,75,74,0.1)',
-                border: '1px solid rgba(226,75,74,0.3)',
-                borderRadius: '8px',
-                padding: '12px 16px',
-                fontSize: '13px',
-                color: '#E24B4A'
+                marginTop: '16px', background: 'rgba(226,75,74,0.1)',
+                border: '1px solid rgba(226,75,74,0.3)', borderRadius: '8px',
+                padding: '12px 16px', fontSize: '13px', color: '#E24B4A'
               }}>
                 {error}
               </div>
             )}
 
-            {/* Place Order */}
-            <button
+            <motion.button
+              whileHover={{ scale: placing ? 1 : 1.02 }}
+              whileTap={{ scale: placing ? 1 : 0.97 }}
               onClick={handlePlaceOrder}
               disabled={placing}
               style={{
-                width: '100%',
-                marginTop: '20px',
-                padding: '16px',
-                background: placing ? 'var(--bg-surface2)' : 'var(--accent)',
+                width: '100%', marginTop: '20px', padding: '16px',
+                background: placing ? 'var(--bg-surface2)' : 'var(--gradient-accent)',
                 color: placing ? 'var(--text-faint)' : 'var(--bg-primary)',
-                border: 'none',
-                borderRadius: '10px',
-                fontSize: '16px',
-                fontWeight: '700',
+                border: 'none', borderRadius: '10px',
+                fontSize: '16px', fontWeight: '700',
                 cursor: placing ? 'not-allowed' : 'pointer',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={e => { if (!placing) e.target.style.background = 'var(--accent-hover)' }}
-              onMouseLeave={e => { if (!placing) e.target.style.background = 'var(--accent)' }}>
-              {placing ? 'Placing Order...' : `Place Order • Rs. ${subtotal.toLocaleString()}`}
-            </button>
-          </div>
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: placing ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
+              }}>
+              {placing ? 'Placing Order...' : <><FiArrowRight size={16} /> Place Order · Rs. {subtotal.toLocaleString()}</>}
+            </motion.button>
+          </motion.div>
 
-          {/* ── Right: Order Summary ── */}
-          <div style={{
-            background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderRadius: '16px',
-            padding: '28px',
-            position: 'sticky',
-            top: '80px'
-          }}>
+          {/* Summary */}
+          <motion.div
+            variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.2 }}
+            style={{
+              background: 'var(--bg-surface)', border: '1px solid var(--border)',
+              borderRadius: '16px', padding: '28px',
+              position: 'sticky', top: '80px'
+            }}>
             <h2 style={{ fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
               Order Summary
               <span style={{ fontSize: '13px', fontWeight: '400', color: 'var(--text-faint)', marginLeft: '8px' }}>
@@ -414,41 +322,30 @@ export default function CheckoutPage() {
               </span>
             </h2>
 
-            {/* Items */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               {items.map(item => {
                 const unitPrice = Math.round(discounted(item))
                 return (
                   <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <img
-                        src={item.image_url || '/placeholder.png'}
-                        alt={item.name}
-                        style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }}
-                      />
+                      <img src={item.image_url || '/placeholder.png'} alt={item.name}
+                        style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px' }} />
                       <span style={{
                         position: 'absolute', top: '-6px', right: '-6px',
-                        background: 'var(--accent)', color: 'var(--bg-primary)',
+                        background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
                         borderRadius: '50%', width: '20px', height: '20px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '11px', fontWeight: '700'
                       }}>{item.qty}</span>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                      }}>{item.name}</p>
+                      <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</p>
                       <p style={{ fontSize: '11px', color: 'var(--accent)' }}>{item.category}</p>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)' }}>
-                        Rs. {(unitPrice * item.qty).toLocaleString()}
-                      </p>
+                      <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)' }}>Rs. {(unitPrice * item.qty).toLocaleString()}</p>
                       {item.discount > 0 && (
-                        <p style={{ fontSize: '11px', color: 'var(--text-faint)', textDecoration: 'line-through' }}>
-                          Rs. {(item.price * item.qty).toLocaleString()}
-                        </p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-faint)', textDecoration: 'line-through' }}>Rs. {(item.price * item.qty).toLocaleString()}</p>
                       )}
                     </div>
                   </div>
@@ -456,18 +353,13 @@ export default function CheckoutPage() {
               })}
             </div>
 
-            {/* Divider */}
             <div style={{ borderTop: '1px solid var(--border)', marginBottom: '16px' }} />
-
-            {/* Totals */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {items.some(i => i.discount > 0) && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <span style={{ color: 'var(--text-faint)' }}>You save</span>
                   <span style={{ color: 'var(--badge-green)', fontWeight: '600' }}>
-                    − Rs. {items.reduce((s, i) =>
-                      s + (i.discount ? Math.round(i.price * i.discount / 100) * i.qty : 0), 0
-                    ).toLocaleString()}
+                    − Rs. {items.reduce((s, i) => s + (i.discount ? Math.round(i.price * i.discount / 100) * i.qty : 0), 0).toLocaleString()}
                   </span>
                 </div>
               )}
@@ -477,12 +369,16 @@ export default function CheckoutPage() {
               </div>
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)' }}>Total</span>
-                <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--accent)' }}>
+                <span style={{
+                  fontSize: '22px', fontWeight: '800',
+                  background: 'var(--gradient-accent)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
+                }}>
                   Rs. {subtotal.toLocaleString()}
                 </span>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 

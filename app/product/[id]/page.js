@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { motion } from 'framer-motion'
+import { FiArrowLeft, FiShoppingCart, FiCheck } from 'react-icons/fi'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import ProductCard from '@/app/components/ProductCard'
@@ -17,10 +19,14 @@ const stockTextColor = {
   'out of stock': '#501313'
 }
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const router = useRouter()
-
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
   const [loading, setLoading] = useState(true)
@@ -33,11 +39,8 @@ export default function ProductDetailPage() {
       if (data) {
         setProduct(data)
         const { data: rel } = await supabase
-          .from('products')
-          .select('*')
-          .eq('category', data.category)
-          .neq('id', id)
-          .limit(4)
+          .from('products').select('*')
+          .eq('category', data.category).neq('id', id).limit(4)
         if (rel) setRelated(rel)
       }
       setLoading(false)
@@ -76,9 +79,8 @@ export default function ProductDetailPage() {
         <Navbar />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
           <p style={{ fontSize: '20px', color: 'var(--text-primary)' }}>Product not found</p>
-          <button
-            onClick={() => router.push('/shop')}
-            style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--bg-primary)', borderRadius: '8px', fontWeight: '600', fontSize: '14px' }}>
+          <button onClick={() => router.push('/shop')}
+            style={{ padding: '10px 24px', background: 'var(--gradient-accent)', color: 'var(--bg-primary)', borderRadius: '8px', fontWeight: '600', fontSize: '14px', border: 'none', cursor: 'pointer' }}>
             Back to Shop
           </button>
         </div>
@@ -94,7 +96,9 @@ export default function ProductDetailPage() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '32px 24px', flex: 1 }}>
 
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px', fontSize: '13px', color: 'var(--text-faint)' }}>
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px', fontSize: '13px', color: 'var(--text-faint)' }}>
           <span onClick={() => router.push('/')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}
             onMouseEnter={e => e.target.style.color = 'var(--accent)'}
             onMouseLeave={e => e.target.style.color = 'var(--text-faint)'}>Home</span>
@@ -104,18 +108,16 @@ export default function ProductDetailPage() {
             onMouseLeave={e => e.target.style.color = 'var(--text-faint)'}>Shop</span>
           <span>/</span>
           <span style={{ color: 'var(--text-muted)' }}>{product.name}</span>
-        </div>
+        </motion.div>
 
-        {/* Main Product Layout */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '48px',
-          marginBottom: '64px'
-        }}>
+        {/* Main layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '48px', marginBottom: '64px' }}>
 
           {/* Image */}
-          <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+          <motion.div
+            initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.55, ease: 'easeOut' }}
+            style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
             <img
               src={product.image_url || '/placeholder.png'}
               alt={product.name}
@@ -124,18 +126,21 @@ export default function ProductDetailPage() {
             {product.discount > 0 && (
               <span style={{
                 position: 'absolute', top: '14px', left: '14px',
-                background: 'var(--accent)', color: 'var(--bg-primary)',
-                padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '700'
+                background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '700',
+                boxShadow: '0 2px 10px rgba(212,163,115,0.3)'
               }}>
                 -{product.discount}% OFF
               </span>
             )}
-          </div>
+          </motion.div>
 
           {/* Info */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <motion.div
+            variants={fadeUp} initial="hidden" animate="visible"
+            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-            {/* Category + Stock */}
+            {/* Badges */}
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{
                 fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '2px',
@@ -154,14 +159,17 @@ export default function ProductDetailPage() {
               </span>
             </div>
 
-            {/* Name */}
             <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1.2' }}>
               {product.name}
             </h1>
 
             {/* Price */}
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-              <span style={{ fontSize: '30px', fontWeight: '800', color: 'var(--accent)' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: '30px', fontWeight: '800',
+                background: 'var(--gradient-accent)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
+              }}>
                 Rs. {Math.round(discountedPrice).toLocaleString()}
               </span>
               {product.discount > 0 && (
@@ -176,117 +184,105 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* Divider */}
             <div style={{ borderTop: '1px solid var(--border)' }} />
 
-            {/* Description */}
             {product.description && (
               <p style={{ fontSize: '15px', color: 'var(--text-faint)', lineHeight: '1.8' }}>
                 {product.description}
               </p>
             )}
 
-            {/* Quantity */}
+            {/* Qty */}
             {product.stock_status !== 'out of stock' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <span style={{ fontSize: '14px', color: 'var(--text-muted)', fontWeight: '500' }}>Quantity</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-                  <button
-                    onClick={() => setQty(q => Math.max(1, q - 1))}
-                    style={{
-                      width: '40px', height: '40px',
-                      background: 'var(--bg-surface2)', color: 'var(--text-primary)',
-                      fontSize: '18px', fontWeight: '400', border: 'none',
-                      cursor: 'pointer', transition: 'background 0.2s'
-                    }}
+                <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <button onClick={() => setQty(q => Math.max(1, q - 1))}
+                    style={{ width: '40px', height: '40px', background: 'var(--bg-surface2)', color: 'var(--text-primary)', fontSize: '18px', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.target.style.background = 'var(--accent)'}
-                    onMouseLeave={e => e.target.style.background = 'var(--bg-surface2)'}>
-                    −
-                  </button>
-                  <span style={{ width: '48px', textAlign: 'center', color: 'var(--text-primary)', fontWeight: '600', fontSize: '15px' }}>
-                    {qty}
-                  </span>
-                  <button
-                    onClick={() => setQty(q => q + 1)}
-                    style={{
-                      width: '40px', height: '40px',
-                      background: 'var(--bg-surface2)', color: 'var(--text-primary)',
-                      fontSize: '18px', fontWeight: '400', border: 'none',
-                      cursor: 'pointer', transition: 'background 0.2s'
-                    }}
+                    onMouseLeave={e => e.target.style.background = 'var(--bg-surface2)'}>−</button>
+                  <span style={{ width: '48px', textAlign: 'center', color: 'var(--text-primary)', fontWeight: '600', fontSize: '15px' }}>{qty}</span>
+                  <button onClick={() => setQty(q => q + 1)}
+                    style={{ width: '40px', height: '40px', background: 'var(--bg-surface2)', color: 'var(--text-primary)', fontSize: '18px', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }}
                     onMouseEnter={e => e.target.style.background = 'var(--accent)'}
-                    onMouseLeave={e => e.target.style.background = 'var(--bg-surface2)'}>
-                    +
-                  </button>
+                    onMouseLeave={e => e.target.style.background = 'var(--bg-surface2)'}>+</button>
                 </div>
               </div>
             )}
 
             {/* Add to Cart */}
-            <button
+            <motion.button
+              whileHover={{ scale: product.stock_status === 'out of stock' ? 1 : 1.02 }}
+              whileTap={{ scale: product.stock_status === 'out of stock' ? 1 : 0.97 }}
               onClick={handleAddToCart}
               disabled={product.stock_status === 'out of stock'}
               style={{
                 padding: '16px',
                 background: product.stock_status === 'out of stock'
                   ? 'var(--bg-surface2)'
-                  : added ? 'var(--badge-green)' : 'var(--accent)',
+                  : added ? 'rgba(204,213,174,0.2)' : 'var(--gradient-accent)',
                 color: product.stock_status === 'out of stock'
                   ? 'var(--text-faint)'
-                  : added ? 'var(--badge-green-text)' : 'var(--bg-primary)',
-                border: 'none',
+                  : added ? 'var(--badge-green)' : 'var(--bg-primary)',
+                border: added ? '1px solid var(--badge-green)' : 'none',
                 borderRadius: '10px',
-                fontSize: '15px',
-                fontWeight: '700',
+                fontSize: '15px', fontWeight: '700',
                 cursor: product.stock_status === 'out of stock' ? 'not-allowed' : 'pointer',
-                transition: 'background 0.3s, transform 0.2s',
-                transform: added ? 'scale(0.98)' : 'scale(1)'
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: added || product.stock_status === 'out of stock' ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
               }}>
-              {product.stock_status === 'out of stock'
-                ? 'Out of Stock'
-                : added ? '✓ Added to Cart' : 'Add to Cart'}
-            </button>
+              {product.stock_status === 'out of stock' ? (
+                'Out of Stock'
+              ) : added ? (
+                <><FiCheck size={16} /> Added to Cart</>
+              ) : (
+                <><FiShoppingCart size={16} /> Add to Cart</>
+              )}
+            </motion.button>
 
-            {/* Back to shop */}
-            <button
+            {/* Back */}
+            <motion.button
+              whileHover={{ x: -4 }}
               onClick={() => router.push('/shop')}
               style={{
                 padding: '12px',
-                background: 'transparent',
-                color: 'var(--text-faint)',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
+                background: 'transparent', color: 'var(--text-faint)',
+                border: '1px solid var(--border)', borderRadius: '10px',
+                fontSize: '14px', fontWeight: '500', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                 transition: 'border-color 0.2s, color 0.2s'
               }}
               onMouseEnter={e => {
-                e.target.style.borderColor = 'var(--accent)'
-                e.target.style.color = 'var(--accent)'
+                e.currentTarget.style.borderColor = 'var(--accent)'
+                e.currentTarget.style.color = 'var(--accent)'
               }}
               onMouseLeave={e => {
-                e.target.style.borderColor = 'var(--border)'
-                e.target.style.color = 'var(--text-faint)'
+                e.currentTarget.style.borderColor = 'var(--border)'
+                e.currentTarget.style.color = 'var(--text-faint)'
               }}>
-              ← Back to Shop
-            </button>
-          </div>
+              <FiArrowLeft size={15} /> Back to Shop
+            </motion.button>
+          </motion.div>
         </div>
 
-        {/* Related Products */}
+        {/* Related */}
         {related.length > 0 && (
           <section>
-            <h2 style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>
+            <motion.h2
+              variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+              style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '24px' }}>
               More in {product.category}
-            </h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: '20px'
-            }}>
-              {related.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
+            </motion.h2>
+            <motion.div
+              variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+              initial="hidden" whileInView="visible" viewport={{ once: true }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+              {related.map(p => (
+                <motion.div key={p.id} variants={fadeUp}>
+                  <ProductCard product={p} />
+                </motion.div>
+              ))}
+            </motion.div>
           </section>
         )}
       </div>

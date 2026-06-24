@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import { motion } from 'framer-motion'
+import { FiShoppingCart, FiMenu, FiX } from 'react-icons/fi'
 import CartDrawer from './CartDrawer'
 
 export default function Navbar() {
@@ -9,6 +11,7 @@ export default function Navbar() {
   const [user, setUser] = useState(null)
   const [cartCount, setCartCount] = useState(0)
   const [cartOpen, setCartOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
@@ -33,40 +36,51 @@ export default function Navbar() {
     router.push('/auth/login')
   }
 
+  const linkStyle = {
+    color: 'var(--text-muted)',
+    fontSize: '14px',
+    cursor: 'pointer',
+    transition: 'color 0.2s',
+    fontWeight: '500'
+  }
+
   return (
     <>
-      <nav style={{
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border)',
-        padding: '0 24px',
-        height: '64px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: 0,
-        zIndex: 1000,
-      }}>
+      <motion.nav
+        initial={{ y: -64, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        style={{
+          background: 'rgba(28, 28, 26, 0.75)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid var(--glass-border)',
+          padding: '0 24px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+        }}>
 
         {/* Logo */}
-        <div
-          onClick={() => router.push('/')}
-          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{
-            fontSize: '22px',
-            fontWeight: '700',
-            color: 'var(--accent)',
-            letterSpacing: '-0.5px'
-          }}>
+        <div onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
+          <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--accent)', letterSpacing: '-0.5px' }}>
             Abuzar<span style={{ color: 'var(--text-primary)' }}>Store</span>
           </span>
         </div>
 
         {/* Desktop Links */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-          <span
-            onClick={() => router.push('/shop')}
-            style={{ color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer', transition: 'color 0.2s' }}
+          <span style={linkStyle} onClick={() => router.push('/')}
+            onMouseEnter={e => e.target.style.color = 'var(--accent)'}
+            onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
+            Home
+          </span>
+
+          <span style={linkStyle} onClick={() => router.push('/shop')}
             onMouseEnter={e => e.target.style.color = 'var(--accent)'}
             onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
             Shop
@@ -74,53 +88,62 @@ export default function Navbar() {
 
           {user ? (
             <>
-              <span
-                onClick={() => router.push('/admin')}
-                style={{ color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer' }}
+              <span style={linkStyle} onClick={() => router.push('/admin')}
                 onMouseEnter={e => e.target.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
                 Admin
               </span>
-              <span
-                onClick={handleLogout}
-                style={{ color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer' }}
+              <span style={linkStyle} onClick={handleLogout}
                 onMouseEnter={e => e.target.style.color = 'var(--accent)'}
                 onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
                 Logout
               </span>
             </>
           ) : (
-            <span
-              onClick={() => router.push('/auth/login')}
-              style={{ color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer' }}
+            <span style={linkStyle} onClick={() => router.push('/auth/login')}
               onMouseEnter={e => e.target.style.color = 'var(--accent)'}
               onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}>
               Login
             </span>
           )}
 
-          {/* Cart Button */}
-          <div
+          {/* Cart Button — glassy rectangular */}
+          <motion.div
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => setCartOpen(true)}
             style={{
-              background: 'var(--accent)',
-              color: 'var(--bg-primary)',
-              padding: '8px 16px',
+              background: 'rgba(212, 163, 115, 0.15)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid var(--glass-border)',
+              color: 'var(--accent)',
+              padding: '8px 18px',
               borderRadius: '8px',
               fontSize: '14px',
               fontWeight: '600',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              transition: 'background 0.2s'
+              gap: '8px',
+              transition: 'background 0.2s, border-color 0.2s'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-hover)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'var(--accent)'}>
-            🛒 Cart {cartCount > 0 && (
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--gradient-accent)'
+              e.currentTarget.style.color = 'var(--bg-primary)'
+              e.currentTarget.style.borderColor = 'transparent'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(212, 163, 115, 0.15)'
+              e.currentTarget.style.color = 'var(--accent)'
+              e.currentTarget.style.borderColor = 'var(--glass-border)'
+            }}>
+            <FiShoppingCart size={16} />
+            Cart
+            {cartCount > 0 && (
               <span style={{
-                background: 'var(--bg-primary)',
-                color: 'var(--accent)',
+                background: 'var(--accent)',
+                color: 'var(--bg-primary)',
                 borderRadius: '50%',
                 width: '20px',
                 height: '20px',
@@ -131,9 +154,9 @@ export default function Navbar() {
                 fontWeight: '700'
               }}>{cartCount}</span>
             )}
-          </div>
+          </motion.div>
         </div>
-      </nav>
+      </motion.nav>
 
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>

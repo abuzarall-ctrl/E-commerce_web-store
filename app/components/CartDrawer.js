@@ -1,6 +1,8 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight } from 'react-icons/fi'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const router = useRouter()
@@ -8,14 +10,10 @@ export default function CartDrawer({ isOpen, onClose }) {
 
   const readCart = () => {
     const raw = JSON.parse(localStorage.getItem('cart') || '[]')
-    // group by product id, keep product data + count
     const map = {}
     for (const p of raw) {
-      if (map[p.id]) {
-        map[p.id].qty += 1
-      } else {
-        map[p.id] = { ...p, qty: 1 }
-      }
+      if (map[p.id]) map[p.id].qty += 1
+      else map[p.id] = { ...p, qty: 1 }
     }
     setItems(Object.values(map))
   }
@@ -27,7 +25,6 @@ export default function CartDrawer({ isOpen, onClose }) {
     return () => window.removeEventListener('cartUpdated', handler)
   }, [])
 
-  // re-read when drawer opens
   useEffect(() => { if (isOpen) readCart() }, [isOpen])
 
   const writeCart = (newItems) => {
@@ -42,44 +39,52 @@ export default function CartDrawer({ isOpen, onClose }) {
     writeCart(items.map(i => i.id === id ? { ...i, qty } : i))
   }
 
-  const remove = (id) => {
-    writeCart(items.filter(i => i.id !== id))
-  }
+  const remove = (id) => writeCart(items.filter(i => i.id !== id))
 
   const discounted = (item) =>
     item.discount ? item.price - (item.price * item.discount / 100) : item.price
 
   const total = items.reduce((sum, i) => sum + Math.round(discounted(i)) * i.qty, 0)
+  const totalQty = items.reduce((s, i) => s + i.qty, 0)
 
   return (
     <>
       {/* Backdrop */}
-      <div
-        onClick={onClose}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(2px)',
-          zIndex: 1100,
-          opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? 'auto' : 'none',
-          transition: 'opacity 0.3s'
-        }}
-      />
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={onClose}
+            style={{
+              position: 'fixed', inset: 0,
+              background: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              zIndex: 1100
+            }}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Drawer */}
-      <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0,
-        width: 'min(420px, 100vw)',
-        background: 'var(--bg-surface)',
-        borderLeft: '1px solid var(--border)',
-        zIndex: 1101,
-        display: 'flex',
-        flexDirection: 'column',
-        transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
-        transition: 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: '-8px 0 32px rgba(0,0,0,0.4)'
-      }}>
+      <motion.div
+        initial={false}
+        animate={{ x: isOpen ? 0 : '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+        style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0,
+          width: 'min(420px, 100vw)',
+          background: 'linear-gradient(180deg, var(--bg-surface) 0%, #222220 100%)',
+          borderLeft: '1px solid var(--glass-border)',
+          zIndex: 1101,
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '-8px 0 48px rgba(0,0,0,0.5)'
+        }}>
 
         {/* Header */}
         <div style={{
@@ -88,27 +93,29 @@ export default function CartDrawer({ isOpen, onClose }) {
           borderBottom: '1px solid var(--border)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>🛒</span>
+            <FiShoppingCart size={20} color="var(--accent)" />
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>
               Your Cart
             </h2>
-            {items.length > 0 && (
+            {totalQty > 0 && (
               <span style={{
-                background: 'var(--accent)', color: 'var(--bg-primary)',
+                background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
                 borderRadius: '50%', width: '22px', height: '22px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '11px', fontWeight: '700'
               }}>
-                {items.reduce((s, i) => s + i.qty, 0)}
+                {totalQty}
               </span>
             )}
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
             onClick={onClose}
             style={{
               background: 'var(--bg-surface2)', border: '1px solid var(--border)',
               color: 'var(--text-faint)', borderRadius: '8px',
-              width: '34px', height: '34px', fontSize: '16px',
+              width: '34px', height: '34px',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'color 0.2s, border-color 0.2s'
             }}
@@ -120,37 +127,45 @@ export default function CartDrawer({ isOpen, onClose }) {
               e.currentTarget.style.color = 'var(--text-faint)'
               e.currentTarget.style.borderColor = 'var(--border)'
             }}>
-            ✕
-          </button>
+            <FiX size={16} />
+          </motion.button>
         </div>
 
         {/* Items */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.length === 0 ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', paddingTop: '80px' }}>
-              <span style={{ fontSize: '48px' }}>🛍️</span>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', paddingTop: '80px' }}>
+              <FiShoppingBag size={48} color="var(--text-faint)" style={{ opacity: 0.4 }} />
               <p style={{ color: 'var(--text-faint)', fontSize: '15px' }}>Your cart is empty</p>
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onClick={() => { onClose(); router.push('/shop') }}
                 style={{
                   padding: '10px 24px',
-                  background: 'var(--accent)', color: 'var(--bg-primary)',
+                  background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
                   border: 'none', borderRadius: '8px',
-                  fontSize: '14px', fontWeight: '600', cursor: 'pointer'
+                  fontSize: '14px', fontWeight: '600', cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(212,163,115,0.25)'
                 }}>
                 Browse Products
-              </button>
+              </motion.button>
             </div>
           ) : (
             items.map(item => (
-              <div key={item.id} style={{
-                display: 'flex', gap: '14px', alignItems: 'flex-start',
-                background: 'var(--bg-surface2)',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                padding: '12px'
-              }}>
-                {/* Thumbnail */}
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                style={{
+                  display: 'flex', gap: '14px', alignItems: 'flex-start',
+                  background: 'var(--bg-surface2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '12px'
+                }}>
                 <img
                   src={item.image_url || '/placeholder.png'}
                   alt={item.name}
@@ -162,15 +177,12 @@ export default function CartDrawer({ isOpen, onClose }) {
                   }}
                 />
 
-                {/* Details */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
-                    fontSize: '14px', fontWeight: '600',
-                    color: 'var(--text-primary)',
+                    fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                     marginBottom: '2px', cursor: 'pointer'
-                  }}
-                    onClick={() => { onClose(); router.push(`/product/${item.id}`) }}>
+                  }} onClick={() => { onClose(); router.push(`/product/${item.id}`) }}>
                     {item.name}
                   </p>
                   <p style={{ fontSize: '11px', color: 'var(--accent)', marginBottom: '8px' }}>{item.category}</p>
@@ -181,22 +193,11 @@ export default function CartDrawer({ isOpen, onClose }) {
                       display: 'flex', alignItems: 'center',
                       border: '1px solid var(--border)', borderRadius: '6px', overflow: 'hidden'
                     }}>
-                      <button
-                        onClick={() => setQty(item.id, item.qty - 1)}
-                        style={{
-                          width: '28px', height: '28px', background: 'var(--bg-surface)',
-                          color: 'var(--text-primary)', fontSize: '14px', border: 'none', cursor: 'pointer'
-                        }}>−</button>
-                      <span style={{
-                        width: '32px', textAlign: 'center',
-                        fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)'
-                      }}>{item.qty}</span>
-                      <button
-                        onClick={() => setQty(item.id, item.qty + 1)}
-                        style={{
-                          width: '28px', height: '28px', background: 'var(--bg-surface)',
-                          color: 'var(--text-primary)', fontSize: '14px', border: 'none', cursor: 'pointer'
-                        }}>+</button>
+                      <button onClick={() => setQty(item.id, item.qty - 1)}
+                        style={{ width: '28px', height: '28px', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '14px', border: 'none', cursor: 'pointer' }}>−</button>
+                      <span style={{ width: '32px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{item.qty}</span>
+                      <button onClick={() => setQty(item.id, item.qty + 1)}
+                        style={{ width: '28px', height: '28px', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '14px', border: 'none', cursor: 'pointer' }}>+</button>
                     </div>
 
                     {/* Price */}
@@ -212,14 +213,16 @@ export default function CartDrawer({ isOpen, onClose }) {
                     </div>
 
                     {/* Remove */}
-                    <button
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => remove(item.id)}
-                      title="Remove"
                       style={{
                         background: 'transparent', border: '1px solid var(--border)',
                         color: 'var(--text-faint)', borderRadius: '6px',
-                        width: '28px', height: '28px', fontSize: '12px',
+                        width: '28px', height: '28px',
                         cursor: 'pointer', flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'color 0.2s, border-color 0.2s'
                       }}
                       onMouseEnter={e => {
@@ -230,11 +233,11 @@ export default function CartDrawer({ isOpen, onClose }) {
                         e.currentTarget.style.color = 'var(--text-faint)'
                         e.currentTarget.style.borderColor = 'var(--border)'
                       }}>
-                      ✕
-                    </button>
+                      <FiTrash2 size={12} />
+                    </motion.button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))
           )}
         </div>
@@ -244,35 +247,35 @@ export default function CartDrawer({ isOpen, onClose }) {
           <div style={{
             padding: '20px 24px',
             borderTop: '1px solid var(--border)',
-            background: 'var(--bg-surface)',
+            background: 'rgba(28,28,26,0.6)',
+            backdropFilter: 'blur(10px)',
             display: 'flex', flexDirection: 'column', gap: '12px'
           }}>
-            {/* Totals */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', color: 'var(--text-faint)' }}>
-                Subtotal ({items.reduce((s, i) => s + i.qty, 0)} items)
+                Subtotal ({totalQty} {totalQty === 1 ? 'item' : 'items'})
               </span>
               <span style={{ fontSize: '20px', fontWeight: '800', color: 'var(--accent)' }}>
                 Rs. {total.toLocaleString()}
               </span>
             </div>
 
-            {/* Checkout */}
-            <button
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => { onClose(); router.push('/checkout') }}
               style={{
                 width: '100%', padding: '14px',
-                background: 'var(--accent)', color: 'var(--bg-primary)',
+                background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
                 border: 'none', borderRadius: '10px',
                 fontSize: '15px', fontWeight: '700',
-                cursor: 'pointer', transition: 'background 0.2s'
-              }}
-              onMouseEnter={e => e.target.style.background = 'var(--accent-hover)'}
-              onMouseLeave={e => e.target.style.background = 'var(--accent)'}>
-              Proceed to Checkout →
-            </button>
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
+              }}>
+              Proceed to Checkout <FiArrowRight size={16} />
+            </motion.button>
 
-            {/* Continue shopping */}
             <button
               onClick={onClose}
               style={{
@@ -281,19 +284,13 @@ export default function CartDrawer({ isOpen, onClose }) {
                 border: '1px solid var(--border)', borderRadius: '10px',
                 fontSize: '13px', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s'
               }}
-              onMouseEnter={e => {
-                e.target.style.borderColor = 'var(--accent)'
-                e.target.style.color = 'var(--accent)'
-              }}
-              onMouseLeave={e => {
-                e.target.style.borderColor = 'var(--border)'
-                e.target.style.color = 'var(--text-faint)'
-              }}>
+              onMouseEnter={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.color = 'var(--accent)' }}
+              onMouseLeave={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.color = 'var(--text-faint)' }}>
               Continue Shopping
             </button>
           </div>
         )}
-      </div>
+      </motion.div>
     </>
   )
 }
