@@ -42,6 +42,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [items, setItems] = useState([])
   const [user, setUser] = useState(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [placing, setPlacing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [orderId, setOrderId] = useState(null)
@@ -57,10 +58,28 @@ export default function CheckoutPage() {
       else map[p.id] = { ...p, qty: 1 }
     }
     setItems(Object.values(map))
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUser(session.user)
+      if (!session) {
+        router.replace('/auth/login?redirect=/checkout')
+      } else {
+        setUser(session.user)
+        setAuthChecked(true)
+      }
     })
   }, [])
+
+  if (!authChecked) {
+    return (
+      <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Navbar />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
+          Checking session...
+        </div>
+        <Footer />
+      </main>
+    )
+  }
 
   const discounted = (item) =>
     item.discount ? item.price - (item.price * item.discount / 100) : item.price

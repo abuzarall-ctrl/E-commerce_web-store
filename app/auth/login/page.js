@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -20,7 +20,14 @@ const inputStyle = {
 
 export default function LoginPage() {
   const router = useRouter()
+  const [redirect, setRedirect] = useState('/')
   const [email, setEmail] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const r = params.get('redirect')
+    if (r) setRedirect(r)
+  }, [])
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
@@ -31,7 +38,7 @@ export default function LoginPage() {
     setGoogleLoading(true)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` }
+      options: { redirectTo: `${window.location.origin}${redirect}` }
     })
     setGoogleLoading(false)
   }
@@ -44,7 +51,7 @@ export default function LoginPage() {
     if (error) {
       setError(error.message)
     } else {
-      router.push('/')
+      router.push(redirect)
     }
     setLoading(false)
   }

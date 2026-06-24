@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight } from 'react-icons/fi'
+import { supabase } from '@/lib/supabaseClient'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const router = useRouter()
@@ -263,7 +264,11 @@ export default function CartDrawer({ isOpen, onClose }) {
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { onClose(); router.push('/checkout') }}
+              onClick={async () => {
+                const { data: { session } } = await supabase.auth.getSession()
+                onClose()
+                router.push(session ? '/checkout' : '/auth/login?redirect=/checkout')
+              }}
               style={{
                 width: '100%', padding: '14px',
                 background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
