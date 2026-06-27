@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { FiSettings } from 'react-icons/fi'
 
-// Change this to your admin email address
-const ADMIN_EMAIL = 'admin@abuzarstore.com'
 
 const inputStyle = {
   width: '100%',
@@ -43,9 +41,9 @@ export default function AdminLoginPage() {
       return
     }
 
-    if (data.user.email !== ADMIN_EMAIL) {
+    if (data.user.app_metadata?.role !== 'admin') {
       await supabase.auth.signOut()
-      setError('Access denied. This login is for admins only.')
+      setError('Access denied. This account is not an admin.')
       setLoading(false)
       return
     }

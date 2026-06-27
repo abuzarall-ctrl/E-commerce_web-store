@@ -6,8 +6,6 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FiSettings } from 'react-icons/fi'
 
-// Only this email can access the admin panel
-const ADMIN_EMAIL = 'admin@abuzarstore.com'
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -26,7 +24,7 @@ export default function AdminPanel() {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/admin/login'); return }
-      if (session.user.email !== ADMIN_EMAIL) { router.push('/'); return }
+      if (session.user.app_metadata?.role !== 'admin') { router.push('/'); return }
       setAuthorized(true)
       fetchProducts()
       setLoading(false)
