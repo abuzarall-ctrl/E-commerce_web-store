@@ -15,8 +15,14 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setUser(session.user)
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for sign-in/sign-out (catches Google OAuth redirect)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
     })
 
     const cart = JSON.parse(localStorage.getItem('cart') || '[]')
@@ -29,7 +35,10 @@ export default function Navbar() {
       setCartCount(updated.length)
     }
     window.addEventListener('cartUpdated', handler)
-    return () => window.removeEventListener('cartUpdated', handler)
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('cartUpdated', handler)
+    }
   }, [])
 
   const handleLogout = async () => {
