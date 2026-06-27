@@ -7,29 +7,28 @@ import { FiEye, FiEyeOff, FiArrowRight, FiMail, FiLock, FiCheckCircle } from 're
 
 // ── Fashion Panel ─────────────────────────────────────────────────────────────
 const ORBS = [
-  { id: 1, w: 260, h: 260, style: { top: '-6%', right: '-4%' }, dur: 8, delay: 0.3 },
-  { id: 2, w: 180, h: 180, style: { bottom: '8%', left: '-3%' }, dur: 7, delay: 1 },
-  { id: 3, w: 120, h: 120, style: { top: '42%', right: '55%' }, dur: 6, delay: 0.5 },
-  { id: 4, w: 80,  h: 80,  style: { top: '18%', left: '20%' }, dur: 9, delay: 2 },
-  { id: 5, w: 55,  h: 55,  style: { bottom: '28%', right: '14%' }, dur: 5, delay: 0.8 },
+  { id: 1, w: 320, h: 320, style: { top: '-8%', right: '-5%' }, dur: 8, delay: 0.3 },
+  { id: 2, w: 220, h: 220, style: { bottom: '6%', left: '-4%' }, dur: 7, delay: 1 },
+  { id: 3, w: 150, h: 150, style: { top: '40%', right: '52%' }, dur: 6, delay: 0.5 },
+  { id: 4, w: 100, h: 100, style: { top: '16%', left: '18%' }, dur: 9, delay: 2 },
+  { id: 5, w: 70,  h: 70,  style: { bottom: '26%', right: '12%' }, dur: 5, delay: 0.8 },
+  { id: 6, w: 55,  h: 55,  style: { top: '62%', left: '38%' }, dur: 7, delay: 1.5 },
 ]
 
+const TSHIRT = 'M28 14 L8 32 L22 38 L22 82 L78 82 L78 38 L92 32 L72 14 Q60 22 50 22 Q40 22 28 14 Z'
+const TROUSER = 'M14 2 L86 2 L86 12 L68 12 L68 58 Q70 80 86 98 L56 98 L50 64 L44 98 L14 98 Q30 80 32 58 L32 12 Z'
+const KURTA = 'M26 10 L4 32 L20 40 L20 96 L80 96 L80 40 L96 32 L74 10 Q62 20 50 20 Q38 20 26 10 Z'
+
 const GARMENTS = [
-  {
-    id: 1,
-    path: 'M28 14 L8 32 L22 38 L22 82 L78 82 L78 38 L92 32 L72 14 Q60 22 50 22 Q40 22 28 14 Z',
-    style: { top: '8%', right: '10%', width: 85, height: 85, rotate: 9, delay: 0.2 }
-  },
-  {
-    id: 2,
-    path: 'M26 10 L4 32 L20 40 L20 96 L80 96 L80 40 L96 32 L74 10 Q62 20 50 20 Q38 20 26 10 Z',
-    style: { bottom: '16%', left: '5%', width: 70, height: 88, rotate: -7, delay: 1.2 }
-  },
-  {
-    id: 3,
-    path: 'M14 2 L86 2 L86 12 L68 12 L68 58 Q70 80 86 98 L56 98 L50 64 L44 98 L14 98 Q30 80 32 58 L32 12 Z',
-    style: { top: '55%', left: '62%', width: 60, height: 75, rotate: 4, delay: 0.7 }
-  },
+  { id: 1, path: TSHIRT,  style: { top: '4%',    right: '8%',  width: 105, height: 105, rotate: 11,  delay: 0.2, dur: 10 } },
+  { id: 2, path: KURTA,   style: { bottom: '8%', left: '3%',   width: 90,  height: 112, rotate: -8,  delay: 1.2, dur: 12 } },
+  { id: 3, path: TROUSER, style: { top: '48%',   left: '58%',  width: 75,  height: 95,  rotate: 5,   delay: 0.7, dur: 11 } },
+  { id: 4, path: TSHIRT,  style: { bottom: '20%',right: '4%',  width: 65,  height: 65,  rotate: -13, delay: 1.8, dur: 9  } },
+  { id: 5, path: TROUSER, style: { top: '10%',   left: '6%',   width: 58,  height: 74,  rotate: -18, delay: 0.4, dur: 13 } },
+  { id: 6, path: KURTA,   style: { top: '30%',   right: '2%',  width: 52,  height: 66,  rotate: 12,  delay: 1.5, dur: 8  } },
+  { id: 7, path: TSHIRT,  style: { bottom: '4%', left: '38%',  width: 46,  height: 46,  rotate: 20,  delay: 2.2, dur: 10 } },
+  { id: 8, path: TROUSER, style: { top: '65%',   right: '28%', width: 42,  height: 54,  rotate: -8,  delay: 0.9, dur: 11 } },
+  { id: 9, path: TSHIRT,  style: { top: '22%',   left: '44%',  width: 38,  height: 38,  rotate: 6,   delay: 1.6, dur: 7  } },
 ]
 
 const PERKS = [
@@ -84,12 +83,17 @@ function FashionPanel() {
       {GARMENTS.map(g => (
         <motion.div
           key={g.id}
-          animate={{ y: [0, -13, 0], rotate: [g.style.rotate, g.style.rotate + 3, g.style.rotate] }}
-          transition={{ duration: 9 + g.style.delay * 2, repeat: Infinity, ease: 'easeInOut', delay: g.style.delay }}
+          animate={{
+            y: [0, -22, -6, -18, 0],
+            rotate: [g.style.rotate, g.style.rotate + 7, g.style.rotate - 3, g.style.rotate + 5, g.style.rotate],
+            scale: [1, 1.07, 0.96, 1.04, 1],
+          }}
+          transition={{ duration: g.style.dur, repeat: Infinity, ease: 'easeInOut', delay: g.style.delay }}
           style={{
             position: 'absolute', width: g.style.width, height: g.style.height,
             top: g.style.top, bottom: g.style.bottom, left: g.style.left, right: g.style.right,
-            zIndex: 3, opacity: 0.09, pointerEvents: 'none'
+            zIndex: 3, opacity: 0.16, pointerEvents: 'none',
+            filter: 'drop-shadow(0 0 10px rgba(212,163,115,0.25))'
           }}>
           <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
             <path d={g.path} fill="#D4A373" />
@@ -158,6 +162,7 @@ function AuthInput({ icon: Icon, type, placeholder, value, onChange, onKeyDown, 
       position: 'relative',
       border: `1px solid ${focused ? 'var(--accent)' : 'rgba(212,163,115,0.2)'}`,
       borderRadius: '10px',
+      overflow: 'hidden',
       background: focused ? 'rgba(212,163,115,0.04)' : 'rgba(28,28,26,0.6)',
       transition: 'border-color 0.25s, background 0.25s, box-shadow 0.25s',
       boxShadow: focused ? '0 0 0 3px rgba(212,163,115,0.1)' : 'none',

@@ -8,40 +8,30 @@ import { FiEye, FiEyeOff, FiArrowRight, FiMail, FiLock } from 'react-icons/fi'
 // ── Fashion Panel constants ──────────────────────────────────────────────────
 
 const ORBS = [
-  { id: 1, w: 280, h: 280, style: { top: '-8%', left: '-6%' }, dur: 7, delay: 0 },
-  { id: 2, w: 200, h: 200, style: { bottom: '5%', right: '-4%' }, dur: 9, delay: 1.5 },
-  { id: 3, w: 140, h: 140, style: { top: '38%', left: '58%' }, dur: 6, delay: 0.8 },
-  { id: 4, w: 90,  h: 90,  style: { bottom: '22%', left: '12%' }, dur: 8, delay: 2 },
-  { id: 5, w: 70,  h: 70,  style: { top: '12%', right: '18%' }, dur: 5, delay: 0.4 },
-  { id: 6, w: 50,  h: 50,  style: { top: '60%', left: '35%' }, dur: 7, delay: 1.2 },
+  { id: 1, w: 320, h: 320, style: { top: '-10%', left: '-8%' }, dur: 7, delay: 0 },
+  { id: 2, w: 220, h: 220, style: { bottom: '4%', right: '-5%' }, dur: 9, delay: 1.5 },
+  { id: 3, w: 160, h: 160, style: { top: '35%', left: '55%' }, dur: 6, delay: 0.8 },
+  { id: 4, w: 100, h: 100, style: { bottom: '20%', left: '10%' }, dur: 8, delay: 2 },
+  { id: 5, w: 80,  h: 80,  style: { top: '10%', right: '16%' }, dur: 5, delay: 0.4 },
+  { id: 6, w: 60,  h: 60,  style: { top: '58%', left: '32%' }, dur: 7, delay: 1.2 },
+  { id: 7, w: 50,  h: 50,  style: { top: '25%', left: '42%' }, dur: 6, delay: 1.8 },
 ]
 
-// Simple clothing SVG paths (viewBox 0 0 100 100)
+// T-shirt, Trouser, Kurta SVG paths (viewBox 0 0 100 100)
+const TSHIRT = 'M28 14 L8 32 L22 38 L22 82 L78 82 L78 38 L92 32 L72 14 Q60 22 50 22 Q40 22 28 14 Z'
+const TROUSER = 'M14 2 L86 2 L86 12 L68 12 L68 58 Q70 80 86 98 L56 98 L50 64 L44 98 L14 98 Q30 80 32 58 L32 12 Z'
+const KURTA = 'M26 10 L4 32 L20 40 L20 96 L80 96 L80 40 L96 32 L74 10 Q62 20 50 20 Q38 20 26 10 Z'
+
 const GARMENTS = [
-  {
-    id: 1,
-    // T-shirt silhouette
-    path: 'M28 14 L8 32 L22 38 L22 82 L78 82 L78 38 L92 32 L72 14 Q60 22 50 22 Q40 22 28 14 Z',
-    style: { top: '12%', left: '8%', width: 90, height: 90, rotate: -10, delay: 0 }
-  },
-  {
-    id: 2,
-    // Long kurta silhouette
-    path: 'M26 10 L4 32 L20 40 L20 96 L80 96 L80 40 L96 32 L74 10 Q62 20 50 20 Q38 20 26 10 Z',
-    style: { bottom: '14%', right: '6%', width: 75, height: 95, rotate: 8, delay: 1 }
-  },
-  {
-    id: 3,
-    // Shalwar / trouser silhouette
-    path: 'M14 2 L86 2 L86 12 L68 12 L68 58 Q70 80 86 98 L56 98 L50 64 L44 98 L14 98 Q30 80 32 58 L32 12 Z',
-    style: { top: '52%', right: '22%', width: 65, height: 80, rotate: -5, delay: 1.8 }
-  },
-  {
-    id: 4,
-    // Simple hanger / coat shape
-    path: 'M50 8 C42 8 38 14 40 20 L14 38 L86 38 L60 20 C62 14 58 8 50 8 Z M22 38 L22 92 L78 92 L78 38',
-    style: { bottom: '32%', left: '4%', width: 55, height: 55, rotate: 6, delay: 0.5 }
-  },
+  { id: 1, path: TSHIRT,  style: { top: '4%',   left: '4%',   width: 110, height: 110, rotate: -12, delay: 0,   dur: 10 } },
+  { id: 2, path: TROUSER, style: { bottom: '5%', right: '3%',  width: 95,  height: 118, rotate: 9,   delay: 1.2, dur: 12 } },
+  { id: 3, path: KURTA,   style: { top: '42%',  right: '6%',  width: 85,  height: 105, rotate: -6,  delay: 2,   dur: 11 } },
+  { id: 4, path: TSHIRT,  style: { bottom: '18%',left: '2%',  width: 70,  height: 70,  rotate: 10,  delay: 0.6, dur: 9  } },
+  { id: 5, path: TROUSER, style: { top: '8%',   right: '12%', width: 60,  height: 76,  rotate: 16,  delay: 0.3, dur: 13 } },
+  { id: 6, path: KURTA,   style: { top: '32%',  left: '1%',   width: 55,  height: 70,  rotate: -9,  delay: 1.5, dur: 8  } },
+  { id: 7, path: TSHIRT,  style: { top: '68%',  right: '22%', width: 50,  height: 50,  rotate: 22,  delay: 2.5, dur: 10 } },
+  { id: 8, path: TROUSER, style: { bottom: '2%', left: '28%', width: 45,  height: 58,  rotate: -18, delay: 0.9, dur: 11 } },
+  { id: 9, path: TSHIRT,  style: { top: '20%',  left: '48%',  width: 40,  height: 40,  rotate: 5,   delay: 1.8, dur: 7  } },
 ]
 
 const FEATURES = [
@@ -116,10 +106,11 @@ function FashionPanel() {
         <motion.div
           key={g.id}
           animate={{
-            y: [0, -14, 0],
-            rotate: [g.style.rotate, g.style.rotate + 4, g.style.rotate],
+            y: [0, -22, -6, -18, 0],
+            rotate: [g.style.rotate, g.style.rotate + 7, g.style.rotate - 3, g.style.rotate + 5, g.style.rotate],
+            scale: [1, 1.07, 0.96, 1.04, 1],
           }}
-          transition={{ duration: 9 + g.style.delay * 2, repeat: Infinity, ease: 'easeInOut', delay: g.style.delay }}
+          transition={{ duration: g.style.dur, repeat: Infinity, ease: 'easeInOut', delay: g.style.delay }}
           style={{
             position: 'absolute',
             width: g.style.width,
@@ -129,8 +120,9 @@ function FashionPanel() {
             left: g.style.left,
             right: g.style.right,
             zIndex: 3,
-            opacity: 0.09,
-            pointerEvents: 'none'
+            opacity: 0.16,
+            pointerEvents: 'none',
+            filter: 'drop-shadow(0 0 10px rgba(212,163,115,0.25))'
           }}>
           <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
             <path d={g.path} fill="#D4A373" />
@@ -226,7 +218,8 @@ function AuthInput({ icon: Icon, type, placeholder, value, onChange, onKeyDown, 
     <div style={{
       position: 'relative',
       border: `1px solid ${focused ? 'var(--accent)' : 'rgba(212, 163, 115, 0.2)'}`,
-      borderRadius: '14px',
+      borderRadius: '10px',
+      overflow: 'hidden',
       background: focused ? 'rgba(212,163,115,0.04)' : 'rgba(28,28,26,0.6)',
       transition: 'border-color 0.25s, background 0.25s, box-shadow 0.25s',
       boxShadow: focused ? '0 0 0 3px rgba(212,163,115,0.1)' : 'none',
@@ -295,11 +288,15 @@ export default function LoginPage() {
     if (!email.trim() || !password) { setError('Please fill in all fields'); return }
     setLoading(true)
     setError('')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
       setError(error.message)
     } else {
-      router.push(redirect)
+      if (data.user?.app_metadata?.role === 'admin') {
+        router.push('/admin')
+      } else {
+        router.push(redirect)
+      }
     }
     setLoading(false)
   }
@@ -376,49 +373,11 @@ export default function LoginPage() {
               <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.5px' }}>
                 Welcome back
               </h1>
-              <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '24px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '32px' }}>
                 Sign in to your AbuzarStore account
               </p>
             </motion.div>
 
-            {/* Role selector */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              style={{
-                display: 'flex', gap: '10px', marginBottom: '28px',
-                background: 'rgba(28,28,26,0.6)', borderRadius: '12px', padding: '5px',
-                border: '1px solid rgba(212,163,115,0.15)'
-              }}>
-              <button
-                style={{
-                  flex: 1, padding: '10px',
-                  borderRadius: '8px', border: 'none',
-                  background: 'var(--gradient-accent)',
-                  color: 'var(--bg-primary)',
-                  fontSize: '13px', fontWeight: '700',
-                  cursor: 'default',
-                  boxShadow: '0 2px 12px rgba(212,163,115,0.3)'
-                }}>
-                Customer
-              </button>
-              <motion.button
-                whileHover={{ background: 'rgba(212,163,115,0.12)' }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => router.push('/admin/login')}
-                style={{
-                  flex: 1, padding: '10px',
-                  borderRadius: '8px', border: 'none',
-                  background: 'rgba(0,0,0,0)',
-                  color: 'var(--text-muted)',
-                  fontSize: '13px', fontWeight: '600',
-                  cursor: 'pointer', transition: 'background 0.2s, color 0.2s'
-                }}
-                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}>
-                Admin
-              </motion.button>
-            </motion.div>
 
             {/* Form fields */}
             <motion.div

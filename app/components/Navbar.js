@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn } from 'react-icons/fi'
+import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings } from 'react-icons/fi'
 import CartDrawer from './CartDrawer'
 
 export default function Navbar() {
@@ -108,6 +108,9 @@ export default function Navbar() {
             <NavLink label="Home" path="/" />
             <NavLink label="Shop" path="/shop" />
             {user && <NavLink label="My Orders" path="/orders" icon={FiPackage} />}
+            {user?.app_metadata?.role === 'admin' && (
+              <NavLink label="Admin Panel" path="/admin" icon={FiSettings} />
+            )}
             {user ? (
               <motion.span
                 whileHover={{ color: '#E24B4A' }}
@@ -222,7 +225,8 @@ export default function Navbar() {
               {[
                 { label: 'Home', path: '/' },
                 { label: 'Shop', path: '/shop' },
-                ...(user ? [{ label: 'My Orders', path: '/orders' }] : [])
+                ...(user ? [{ label: 'My Orders', path: '/orders' }] : []),
+                ...(user?.app_metadata?.role === 'admin' ? [{ label: 'Admin Panel', path: '/admin' }] : [])
               ].map(({ label, path }) => (
                 <motion.span
                   key={path}
