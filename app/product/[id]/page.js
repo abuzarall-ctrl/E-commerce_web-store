@@ -90,15 +90,30 @@ export default function ProductDetailPage() {
   }
 
   return (
+    <>
+      <style>{`
+        .product-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 64px; align-items: start; }
+        .product-img-wrap { height: 480px !important; }
+        @media (max-width: 768px) {
+          .product-detail-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
+          .product-img-wrap { height: 320px !important; }
+          .product-detail-pad { padding: 20px 16px !important; }
+        }
+        @media (max-width: 480px) {
+          .product-img-wrap { height: 260px !important; }
+          .related-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+      `}</style>
+
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '32px 24px', flex: 1 }}>
+      <div className="product-detail-pad" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '32px 24px', flex: 1 }}>
 
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '32px', fontSize: '13px', color: 'var(--text-faint)' }}>
+          style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '28px', fontSize: '13px', color: 'var(--text-faint)', flexWrap: 'wrap' }}>
           <span onClick={() => router.push('/')} style={{ cursor: 'pointer', transition: 'color 0.2s' }}
             onMouseEnter={e => e.target.style.color = 'var(--accent)'}
             onMouseLeave={e => e.target.style.color = 'var(--text-faint)'}>Home</span>
@@ -107,22 +122,26 @@ export default function ProductDetailPage() {
             onMouseEnter={e => e.target.style.color = 'var(--accent)'}
             onMouseLeave={e => e.target.style.color = 'var(--text-faint)'}>Shop</span>
           <span>/</span>
-          <span style={{ color: 'var(--text-muted)' }}>{product.name}</span>
+          <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '180px' }}>{product.name}</span>
         </motion.div>
 
         {/* Main layout */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '48px', marginBottom: '64px' }}>
+        <div className="product-detail-grid">
 
           {/* Image */}
           <motion.div
             initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
             style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <img
-              src={product.image_url || '/placeholder.png'}
-              alt={product.name}
-              style={{ width: '100%', height: '480px', objectFit: 'cover', display: 'block' }}
-            />
+            <div className="product-img-wrap" style={{ overflow: 'hidden' }}>
+              <motion.img
+                src={product.image_url || '/placeholder.png'}
+                alt={product.name}
+                whileHover={{ scale: 1.04 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
             {product.discount > 0 && (
               <span style={{
                 position: 'absolute', top: '14px', left: '14px',
@@ -276,6 +295,7 @@ export default function ProductDetailPage() {
             <motion.div
               variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
               initial="hidden" whileInView="visible" viewport={{ once: true }}
+              className="related-grid"
               style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {related.map(p => (
                 <motion.div key={p.id} variants={fadeUp}>
@@ -289,5 +309,6 @@ export default function ProductDetailPage() {
 
       <Footer />
     </main>
+    </>
   )
 }

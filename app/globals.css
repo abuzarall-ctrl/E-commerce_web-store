@@ -63,3 +63,78 @@ button {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(212, 163, 115, 0.25);
+  color: var(--text-primary);
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: var(--border); }
+  50% { border-color: rgba(212, 163, 115, 0.4); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 163, 115, 0); }
+  50% { box-shadow: 0 0 24px 4px rgba(212, 163, 115, 0.15); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-surface) 25%, var(--bg-surface2) 50%, var(--bg-surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ── Responsive base ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  body { font-size: 14px; }
+}
+
+/* Prevent horizontal overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Touch target min size */
+button, [role="button"] {
+  min-height: 40px;
+}
+
+/* Better tap behavior on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

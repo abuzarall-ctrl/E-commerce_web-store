@@ -40,11 +40,29 @@ export default function Home() {
   ]
 
   return (
+    <>
+      <style>{`
+        @media (max-width: 640px) {
+          .hero-section { padding: 56px 20px !important; }
+          .hero-buttons { flex-direction: column !important; align-items: stretch !important; }
+          .hero-buttons button { width: 100% !important; justify-content: center !important; }
+          .categories-section { padding: 40px 16px !important; }
+          .featured-section { padding: 0 16px 48px !important; }
+          .trust-section { padding: 36px 16px !important; }
+          .category-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .featured-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+        @media (max-width: 400px) {
+          .category-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .featured-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
 
       {/* Hero */}
-      <section style={{
+      <section className="hero-section" style={{
         background: 'linear-gradient(135deg, var(--bg-surface) 0%, #222220 100%)',
         padding: '90px 24px',
         textAlign: 'center',
@@ -98,6 +116,7 @@ export default function Home() {
         <motion.div
           variants={stagger} initial="hidden" animate="visible"
           transition={{ delayChildren: 0.3 }}
+          className="hero-buttons"
           style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <motion.button
             variants={fadeUp}
@@ -142,7 +161,7 @@ export default function Home() {
       </section>
 
       {/* Categories */}
-      <section style={{ padding: '60px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+      <section className="categories-section" style={{ padding: '60px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <motion.h2
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
           style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '24px' }}>
@@ -151,6 +170,7 @@ export default function Home() {
 
         <motion.div
           variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
+          className="category-grid"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
           {['T-Shirts', 'Shalwar Kameez', 'Kurta', 'Shorts', 'Trousers'].map(cat => (
             <motion.div
@@ -183,7 +203,7 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section style={{ padding: '0 24px 60px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+      <section className="featured-section" style={{ padding: '0 24px 60px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <motion.div
           variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -204,6 +224,7 @@ export default function Home() {
         ) : (
           <motion.div
             variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
+            className="featured-grid"
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
             {products.map((product, i) => (
               <motion.div key={product.id} variants={fadeUp} custom={i}>
@@ -215,7 +236,7 @@ export default function Home() {
       </section>
 
       {/* Trust Banner */}
-      <section style={{
+      <section className="trust-section" style={{
         background: 'linear-gradient(135deg, var(--bg-surface) 0%, #222220 100%)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
@@ -253,5 +274,6 @@ export default function Home() {
 
       <Footer />
     </main>
+    </>
   )
 }

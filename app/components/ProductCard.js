@@ -1,7 +1,8 @@
 'use client'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { FiShoppingCart } from 'react-icons/fi'
+import { motion, AnimatePresence } from 'framer-motion'
+import { FiShoppingCart, FiCheck } from 'react-icons/fi'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -16,10 +17,24 @@ const stockTextColor = {
 
 export default function ProductCard({ product }) {
   const router = useRouter()
+  const [added, setAdded] = useState(false)
 
   const discountedPrice = product.discount
     ? product.price - (product.price * product.discount / 100)
     : product.price
+
+  const handleAddToCart = (e) => {
+    e.stopPropagation()
+    if (added || product.stock_status === 'out of stock') return
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
+    cart.push(product)
+    localStorage.setItem('cart', JSON.stringify(cart))
+    window.dispatchEvent(new Event('cartUpdated'))
+    setAdded(true)
+    setTimeout(() => setAdded(false), 1800)
+  }
+
+  const outOfStock = product.stock_status === 'out of stock'
 
   return (
     <motion.div
@@ -36,7 +51,7 @@ export default function ProductCard({ product }) {
       }}
       onMouseEnter={e => {
         e.currentTarget.style.borderColor = 'var(--accent)'
-        e.currentTarget.style.boxShadow = '0 8px 32px rgba(212, 163, 115, 0.15)'
+        e.currentTarget.style.boxShadow = '0 8px 32px rgba(212, 163, 115, 0.18)'
       }}
       onMouseLeave={e => {
         e.currentTarget.style.borderColor = 'var(--border)'
@@ -45,29 +60,28 @@ export default function ProductCard({ product }) {
 
       {/* Image */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        <img
+        <motion.img
           src={product.image_url || '/placeholder.png'}
           alt={product.name}
-          style={{
-            width: '100%', height: '220px',
-            objectFit: 'cover',
-            transition: 'transform 0.4s ease'
-          }}
-          onMouseEnter={e => e.target.style.transform = 'scale(1.06)'}
-          onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+          whileHover={{ scale: 1.07 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
         />
 
         {product.discount > 0 && (
-          <span style={{
-            position: 'absolute', top: '10px', left: '10px',
-            background: 'var(--gradient-accent)',
-            color: 'var(--bg-primary)',
-            padding: '3px 8px', borderRadius: '6px',
-            fontSize: '11px', fontWeight: '700',
-            boxShadow: '0 2px 8px rgba(212,163,115,0.3)'
-          }}>
+          <motion.span
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            style={{
+              position: 'absolute', top: '10px', left: '10px',
+              background: 'var(--gradient-accent)',
+              color: 'var(--bg-primary)',
+              padding: '3px 8px', borderRadius: '6px',
+              fontSize: '11px', fontWeight: '700',
+              boxShadow: '0 2px 8px rgba(212,163,115,0.3)'
+            }}>
             -{product.discount}% OFF
-          </span>
+          </motion.span>
         )}
 
         <span style={{
@@ -110,28 +124,54 @@ export default function ProductCard({ product }) {
         </div>
 
         <motion.button
-          whileHover={{ scale: product.stock_status === 'out of stock' ? 1 : 1.02 }}
-          whileTap={{ scale: product.stock_status === 'out of stock' ? 1 : 0.97 }}
-          disabled={product.stock_status === 'out of stock'}
-          onClick={e => {
-            e.stopPropagation()
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-            cart.push(product)
-            localStorage.setItem('cart', JSON.stringify(cart))
-            window.dispatchEvent(new Event('cartUpdated'))
-          }}
+          whileHover={{ scale: outOfStock ? 1 : 1.02 }}
+          whileTap={{ scale: outOfStock ? 1 : 0.96 }}
+          disabled={outOfStock}
+          onClick={handleAddToCart}
+          animate={added ? { scale: [1, 1.06, 1] } : {}}
+          transition={{ duration: 0.3 }}
           style={{
             width: '100%', padding: '10px',
-            background: product.stock_status === 'out of stock' ? 'var(--bg-surface2)' : 'var(--gradient-accent)',
-            color: product.stock_status === 'out of stock' ? 'var(--text-faint)' : 'var(--bg-primary)',
-            border: 'none', borderRadius: '8px',
+            background: outOfStock
+              ? 'var(--bg-surface2)'
+              : added
+              ? 'rgba(134,239,172,0.15)'
+              : 'var(--gradient-accent)',
+            color: outOfStock
+              ? 'var(--text-faint)'
+              : added
+              ? '#86EFAC'
+              : 'var(--bg-primary)',
+            border: added ? '1px solid rgba(134,239,172,0.3)' : 'none',
+            borderRadius: '8px',
             fontSize: '13px', fontWeight: '600',
-            cursor: product.stock_status === 'out of stock' ? 'not-allowed' : 'pointer',
+            cursor: outOfStock ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            boxShadow: product.stock_status === 'out of stock' ? 'none' : '0 2px 12px rgba(212,163,115,0.25)'
+            boxShadow: outOfStock || added ? 'none' : '0 2px 12px rgba(212,163,115,0.25)',
+            transition: 'background 0.3s, color 0.3s, border 0.3s, box-shadow 0.3s'
           }}>
-          <FiShoppingCart size={14} />
-          {product.stock_status === 'out of stock' ? 'Out of Stock' : 'Add to Cart'}
+          <AnimatePresence mode="wait">
+            {added ? (
+              <motion.span
+                key="added"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiCheck size={14} /> Added!
+              </motion.span>
+            ) : (
+              <motion.span
+                key="add"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FiShoppingCart size={14} />
+                {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </motion.button>
       </div>
     </motion.div>

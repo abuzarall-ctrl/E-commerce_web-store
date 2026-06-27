@@ -34,7 +34,7 @@
 ## Database Tables
 - products (id, name, description, category, price, discount, image_url, stock_status, created_at)
 - users (id, email, role, created_at)
-- orders (id, user_id, products, total, status, created_at)
+- orders (id, user_id, products, total, status, customer_name, customer_phone, customer_address, customer_city, notes, created_at)
 
 ## Completed Phases
 - Phase 1: Planning done
@@ -48,6 +48,8 @@
   - Product detail page done
   - Cart drawer done
   - Checkout page done
+  - Order history page done (/orders)
+  - Admin has dedicated login at /admin/login (single admin email, no DB role check)
 
 ## Business Context
 - Pakistani clothing store
