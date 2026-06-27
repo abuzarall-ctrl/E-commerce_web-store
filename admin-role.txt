@@ -1,0 +1,18 @@
+GRANT ADMIN ROLE
+=================
+
+Command to grant admin access to any user:
+
+  node scripts/make-admin.mjs your@email.com
+
+
+Examples:
+
+  node scripts/make-admin.mjs abuzar.all@iak.ngo
+  node scripts/make-admin.mjs anotheradmin@email.com
+
+
+Steps:
+  1. Create the user first in Supabase → Authentication → Users → Add user
+  2. Run the command above with their email
+  3. They can now log in at /admin/login

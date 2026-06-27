@@ -226,7 +226,7 @@ function AuthInput({ icon: Icon, type, placeholder, value, onChange, onKeyDown, 
     <div style={{
       position: 'relative',
       border: `1px solid ${focused ? 'var(--accent)' : 'rgba(212, 163, 115, 0.2)'}`,
-      borderRadius: '10px',
+      borderRadius: '14px',
       background: focused ? 'rgba(212,163,115,0.04)' : 'rgba(28,28,26,0.6)',
       transition: 'border-color 0.25s, background 0.25s, box-shadow 0.25s',
       boxShadow: focused ? '0 0 0 3px rgba(212,163,115,0.1)' : 'none',
@@ -376,9 +376,48 @@ export default function LoginPage() {
               <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px', letterSpacing: '-0.5px' }}>
                 Welcome back
               </h1>
-              <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '32px' }}>
+              <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '24px' }}>
                 Sign in to your AbuzarStore account
               </p>
+            </motion.div>
+
+            {/* Role selector */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              style={{
+                display: 'flex', gap: '10px', marginBottom: '28px',
+                background: 'rgba(28,28,26,0.6)', borderRadius: '12px', padding: '5px',
+                border: '1px solid rgba(212,163,115,0.15)'
+              }}>
+              <button
+                style={{
+                  flex: 1, padding: '10px',
+                  borderRadius: '8px', border: 'none',
+                  background: 'var(--gradient-accent)',
+                  color: 'var(--bg-primary)',
+                  fontSize: '13px', fontWeight: '700',
+                  cursor: 'default',
+                  boxShadow: '0 2px 12px rgba(212,163,115,0.3)'
+                }}>
+                Customer
+              </button>
+              <motion.button
+                whileHover={{ background: 'rgba(212,163,115,0.12)' }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push('/admin/login')}
+                style={{
+                  flex: 1, padding: '10px',
+                  borderRadius: '8px', border: 'none',
+                  background: 'rgba(0,0,0,0)',
+                  color: 'var(--text-muted)',
+                  fontSize: '13px', fontWeight: '600',
+                  cursor: 'pointer', transition: 'background 0.2s, color 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--accent)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}>
+                Admin
+              </motion.button>
             </motion.div>
 
             {/* Form fields */}
