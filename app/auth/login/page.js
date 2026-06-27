@@ -401,9 +401,17 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                  Password
-                </label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                    Password
+                  </label>
+                  <motion.span
+                    whileHover={{ color: 'var(--accent)' }}
+                    onClick={() => router.push('/auth/forgot-password')}
+                    style={{ fontSize: '12px', color: 'var(--text-faint)', cursor: 'pointer', fontWeight: '500' }}>
+                    Forgot password?
+                  </motion.span>
+                </div>
                 <AuthInput
                   icon={FiLock}
                   type={showPassword ? 'text' : 'password'}
