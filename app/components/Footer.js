@@ -25,7 +25,7 @@ export default function Footer() {
 
   return (
     <footer style={{
-      background: 'linear-gradient(180deg, var(--bg-surface) 0%, #1e1e1c 100%)',
+      background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
       borderTop: '1px solid var(--border)',
       paddingTop: '64px',
       marginTop: 'auto'

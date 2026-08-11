@@ -21,6 +21,65 @@
   --glass-bg: rgba(28, 28, 26, 0.6);
   --glass-card: rgba(42, 42, 40, 0.55);
   --glass-border: rgba(212, 163, 115, 0.2);
+  --animated-grad-1: #D4A373;
+  --animated-grad-2: #C4936A;
+  --animated-grad-3: #8E7A5A;
+  --nav-gradient: linear-gradient(
+    90deg,
+    rgba(20, 20, 18, 0.92) 0%,
+    rgba(20, 20, 18, 0.6) 35%,
+    rgba(20, 20, 18, 0.18) 70%,
+    rgba(20, 20, 18, 0) 100%
+  );
+  --nav-border: rgba(255, 255, 255, 0.05);
+  --nav-mobile-bg: rgba(28, 28, 26, 0.97);
+  --hero-overlay: radial-gradient(ellipse at 50% 40%, rgba(212,163,115,0.10), transparent 65%),
+    linear-gradient(180deg, rgba(28,28,26,0.38) 0%, rgba(28,28,26,0.42) 45%, rgba(28,28,26,0.82) 100%);
+  --hero-garment-opacity: 0.7;
+}
+
+/* ── Light theme ─────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-primary: #FAF6EF;
+  --bg-surface: #F4EEE3;
+  --bg-surface2: #E9E0D2;
+  --accent: #A9773F;
+  --accent-hover: #8F6233;
+  --text-primary: #2B251D;
+  --text-muted: #55493A;
+  --text-faint: #8C8170;
+  --badge-green: #7E9158;
+  --badge-green-text: #FFFFFF;
+  --border: rgba(169, 119, 63, 0.22);
+  --gradient-accent: linear-gradient(135deg, #C08A4E 0%, #A9773F 100%);
+  --gradient-surface: linear-gradient(135deg, #F4EEE3 0%, #E9E0D2 100%);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-card: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(169, 119, 63, 0.3);
+  --nav-gradient: linear-gradient(
+    90deg,
+    rgba(250, 246, 239, 0.95) 0%,
+    rgba(250, 246, 239, 0.6) 35%,
+    rgba(250, 246, 239, 0.2) 70%,
+    rgba(250, 246, 239, 0) 100%
+  );
+  --nav-border: rgba(43, 37, 29, 0.08);
+  --nav-mobile-bg: rgba(250, 246, 239, 0.97);
+  --hero-overlay: linear-gradient(
+    180deg,
+    rgba(250, 246, 239, 0.72) 0%,
+    rgba(250, 246, 239, 0.74) 45%,
+    rgba(250, 246, 239, 0.94) 100%
+  );
+  --hero-garment-opacity: 0.5;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 body {
@@ -95,6 +154,129 @@ img {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes animatedGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Black-to-transparent gradient navbar (theme-aware) */
+.site-navbar {
+  background: var(--nav-gradient);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--nav-border);
+}
+
+/* Hero cloth-only background (garments only — no people, no props) */
+.hero-cloth-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.hero-cloth-scene .hero-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: translateZ(0);
+  filter: saturate(1.05) brightness(1.06) contrast(0.98);
+  opacity: 1;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Woven-fabric sheen shown behind the garment silhouettes / video */
+.fabric-sheen {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(120deg, rgba(212,163,115,0.035) 0%, rgba(0,0,0,0.03) 50%, rgba(212,163,115,0.035) 100%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.01) 0 1px, transparent 1px 5px);
+  background-size: 200% 200%, 6px 6px, 5px 5px;
+  animation: fabricShift 14s ease-in-out infinite;
+}
+
+@keyframes fabricShift {
+  0% { background-position: 0% 50%, 0 0, 0 0; }
+  50% { background-position: 100% 50%, -12px 6px, 4px -4px; }
+  100% { background-position: 0% 50%, 0 0, 0 0; }
+}
+
+/* Floating garment silhouettes (animated by GSAP) */
+.garment-layer {
+  position: absolute;
+  inset: 0;
+}
+.garment {
+  position: absolute;
+  opacity: var(--hero-garment-opacity);
+  will-change: transform, opacity;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.35));
+}
+.garment--tee { width: 220px; top: 9%; left: 6%; }
+.garment--kurta { width: 260px; top: 12%; right: 7%; }
+.garment--trousers { width: 190px; bottom: 9%; left: 11%; }
+.garment--shirt { width: 180px; bottom: 14%; right: 11%; }
+.garment--fabric { width: 420px; top: 5%; left: 50%; transform: translateX(-50%); }
+
+@media (max-width: 640px) {
+  .garment--tee { width: 130px; top: 6%; left: -18px; }
+  .garment--kurta { width: 150px; top: 8%; right: -20px; }
+  .garment--trousers { width: 110px; bottom: 8%; left: -10px; }
+  .garment--shirt { width: 105px; bottom: 12%; right: -12px; }
+  .garment--fabric { width: 260px; top: 4%; opacity: 0.55; }
+}
+
+.hero-overlay {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: var(--hero-overlay);
+}
+
+/* Infinite garment marquee (animated by GSAP) */
+.marquee-strip {
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  background: rgba(212, 163, 115, 0.04);
+  padding: 14px 0;
+  position: relative;
+  z-index: 1;
+}
+.marquee-track {
+  display: inline-flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+.marquee-group {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+  padding: 0 14px;
+}
+.marquee-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: 28px;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track > .marquee-group:nth-child(2) { display: none; }
 }
 
 @keyframes slideInRight {

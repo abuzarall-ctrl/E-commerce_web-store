@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
 import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle, FiShoppingBag } from 'react-icons/fi'
+import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 
@@ -188,9 +189,10 @@ export default function OrdersPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {products.map((item, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            {item.image_url && (
-                              <img src={item.image_url} alt={item.name}
-                                style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }} />
+{item.image_url && (
+                              <div style={{ position: 'relative', width: '46px', height: '46px', flexShrink: 0 }}>
+                                <Image src={item.image_url} alt={item.name} fill sizes="46px" style={{ objectFit: 'cover', borderRadius: '6px' }} />
+                              </div>
                             )}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{item.name}</p>

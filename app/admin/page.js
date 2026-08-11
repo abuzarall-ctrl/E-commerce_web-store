@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FiSettings } from 'react-icons/fi'
+import Image from 'next/image'
 
 
 export default function AdminPanel() {
@@ -187,7 +188,11 @@ export default function AdminPanel() {
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      {p.image_url && <img src={p.image_url} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover' }} />}
+                      {p.image_url && (
+                        <div style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
+                          <Image src={p.image_url} alt={p.name} fill sizes="40px" style={{ objectFit: 'cover', borderRadius: '6px' }} />
+                        </div>
+                      )}
                       <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{p.name}</span>
                     </div>
                   </td>

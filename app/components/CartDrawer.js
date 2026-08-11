@@ -1,38 +1,20 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight } from 'react-icons/fi'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
+import { writeCartToStorage } from '@/lib/cartStorage'
+import { subscribeCart, getCartItems, refreshCart } from '@/lib/cartStore'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const router = useRouter()
-  const [items, setItems] = useState([])
-
-  const readCart = () => {
-    const raw = JSON.parse(localStorage.getItem('cart') || '[]')
-    const map = {}
-    for (const p of raw) {
-      if (map[p.id]) map[p.id].qty += 1
-      else map[p.id] = { ...p, qty: 1 }
-    }
-    setItems(Object.values(map))
-  }
-
-  useEffect(() => {
-    readCart()
-    const handler = () => readCart()
-    window.addEventListener('cartUpdated', handler)
-    return () => window.removeEventListener('cartUpdated', handler)
-  }, [])
-
-  useEffect(() => { if (isOpen) readCart() }, [isOpen])
+  const items = useSyncExternalStore(subscribeCart, getCartItems, () => [])
 
   const writeCart = (newItems) => {
-    const flat = newItems.flatMap(item => Array(item.qty).fill({ ...item, qty: undefined }))
-    localStorage.setItem('cart', JSON.stringify(flat))
-    window.dispatchEvent(new Event('cartUpdated'))
-    setItems(newItems)
+    writeCartToStorage(newItems)
+    refreshCart()
   }
 
   const setQty = (id, qty) => {
@@ -79,7 +61,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         style={{
           position: 'fixed', top: 0, right: 0, bottom: 0,
           width: 'min(420px, 100vw)',
-          background: 'linear-gradient(180deg, var(--bg-surface) 0%, #222220 100%)',
+          background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
           borderLeft: '1px solid var(--glass-border)',
           zIndex: 1101,
           display: 'flex',
@@ -132,6 +114,43 @@ export default function CartDrawer({ isOpen, onClose }) {
           </motion.button>
         </div>
 
+        {/* Free shipping progress */}
+        {items.length > 0 && (() => {
+          const FREE_SHIPPING = 3000
+          const remaining = Math.max(0, FREE_SHIPPING - total)
+          const pct = Math.min(100, Math.round((total / FREE_SHIPPING) * 100))
+          return (
+            <div style={{
+              padding: '12px 24px',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--glass-bg)'
+            }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                {remaining > 0 ? (
+                  <>Add <b style={{ color: 'var(--accent)' }}>Rs. {Math.round(remaining).toLocaleString()}</b> more for <b>FREE shipping</b></>
+                ) : (
+                  <b style={{ color: 'var(--badge-green)' }}>You have unlocked FREE shipping!</b>
+                )}
+              </p>
+              <div style={{
+                height: '6px', borderRadius: '3px',
+                background: 'var(--bg-surface2)',
+                overflow: 'hidden'
+              }}>
+                <motion.div
+                  animate={{ width: `${pct}%` }}
+                  transition={{ type: 'spring', damping: 22, stiffness: 120 }}
+                  style={{
+                    height: '100%',
+                    background: remaining > 0 ? 'var(--gradient-accent)' : 'var(--badge-green)',
+                    borderRadius: '3px'
+                  }}
+                />
+              </div>
+            </div>
+          )
+        })()}
+
         {/* Items */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.length === 0 ? (
@@ -167,16 +186,17 @@ export default function CartDrawer({ isOpen, onClose }) {
                   borderRadius: '10px',
                   padding: '12px'
                 }}>
-                <img
-                  src={item.image_url || '/placeholder.png'}
-                  alt={item.name}
+                <div
                   onClick={() => { onClose(); router.push(`/product/${item.id}`) }}
-                  style={{
-                    width: '72px', height: '72px',
-                    objectFit: 'cover', borderRadius: '8px',
-                    flexShrink: 0, cursor: 'pointer'
-                  }}
-                />
+                  style={{ position: 'relative', width: '72px', height: '72px', flexShrink: 0, cursor: 'pointer' }}>
+                  <Image
+                    src={item.image_url || '/placeholder.png'}
+                    alt={item.name}
+                    fill
+                    sizes="72px"
+                    style={{ objectFit: 'cover', borderRadius: '8px' }}
+                  />
+                </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
@@ -248,7 +268,7 @@ export default function CartDrawer({ isOpen, onClose }) {
           <div style={{
             padding: '20px 24px',
             borderTop: '1px solid var(--border)',
-            background: 'rgba(28,28,26,0.6)',
+            background: 'var(--glass-bg)',
             backdropFilter: 'blur(10px)',
             display: 'flex', flexDirection: 'column', gap: '12px'
           }}>

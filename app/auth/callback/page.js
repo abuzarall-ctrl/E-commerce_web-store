@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
+import AuthLayout from '@/app/components/auth/AuthLayout'
+import '@/app/auth/auth.css'
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -65,21 +67,11 @@ export default function AuthCallback() {
   }, [router])
 
   return (
-    <div style={{
-      height: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: '#111110', gap: '20px'
-    }}>
-      <div style={{
-        width: '44px', height: '44px', borderRadius: '50%',
-        border: '3px solid rgba(212,163,115,0.15)',
-        borderTop: '3px solid #D4A373',
-        animation: 'spin 0.75s linear infinite'
-      }} />
-      <p style={{ color: '#FEFAE0', fontSize: '16px', fontWeight: '500', letterSpacing: '-0.2px' }}>
-        {msg}
-      </p>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    <AuthLayout>
+      <div className="auth-success">
+        <div className="auth-spinner" />
+        <p className="auth-spinner-text" role="status">{msg}</p>
+      </div>
+    </AuthLayout>
   )
 }

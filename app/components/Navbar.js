@@ -1,18 +1,40 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
+import { subscribeCart, getCartItems, initCartStore } from '@/lib/cartStore'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings } from 'react-icons/fi'
+import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon } from 'react-icons/fi'
 import CartDrawer from './CartDrawer'
+
+const linkStyle = {
+  color: 'var(--text-muted)',
+  fontSize: '14px',
+  cursor: 'pointer',
+  fontWeight: '500',
+  padding: '4px 0',
+  position: 'relative'
+}
+
+const NavLink = ({ label, onClick, icon: Icon }) => (
+  <motion.span
+    whileHover={{ color: 'var(--accent)' }}
+    onClick={onClick}
+    style={linkStyle}>
+    {Icon && <Icon size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+    {label}
+  </motion.span>
+)
 
 export default function Navbar() {
   const router = useRouter()
   const [user, setUser] = useState(null)
-  const [cartCount, setCartCount] = useState(0)
-  const [prevCount, setPrevCount] = useState(0)
+  const cartCount = useSyncExternalStore(subscribeCart, getCartItems, () => []).length
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [theme, setTheme] = useState(() =>
+    typeof document !== 'undefined' ? document.documentElement.dataset.theme || 'dark' : 'dark'
+  )
 
   useEffect(() => {
     // Get initial session
@@ -20,24 +42,15 @@ export default function Navbar() {
       setUser(session?.user ?? null)
     })
 
+    initCartStore()
+
     // Listen for sign-in/sign-out (catches Google OAuth redirect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
     })
 
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    setCartCount(cart.length)
-    setPrevCount(cart.length)
-
-    const handler = () => {
-      const updated = JSON.parse(localStorage.getItem('cart') || '[]')
-      setPrevCount(c => c)
-      setCartCount(updated.length)
-    }
-    window.addEventListener('cartUpdated', handler)
     return () => {
       subscription.unsubscribe()
-      window.removeEventListener('cartUpdated', handler)
     }
   }, [])
 
@@ -48,37 +61,24 @@ export default function Navbar() {
     router.push('/')
   }
 
-  const navigate = (path) => { router.push(path); setMenuOpen(false) }
-
-  const linkStyle = {
-    color: 'var(--text-muted)',
-    fontSize: '14px',
-    cursor: 'pointer',
-    fontWeight: '500',
-    padding: '4px 0',
-    position: 'relative'
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    document.documentElement.dataset.theme = next
+    localStorage.setItem('theme', next)
+    setTheme(next)
   }
 
-  const NavLink = ({ label, path, icon: Icon }) => (
-    <motion.span
-      whileHover={{ color: 'var(--accent)' }}
-      onClick={() => navigate(path)}
-      style={linkStyle}>
-      {Icon && <Icon size={13} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
-      {label}
-    </motion.span>
-  )
+  const navigate = (path) => { router.push(path); setMenuOpen(false) }
 
   return (
     <>
-      <motion.nav
+      <motion.nav className="site-navbar"
         initial={{ y: -64, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
         style={{
-          background: 'rgba(28, 28, 26, 0.85)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           borderBottom: '1px solid var(--border)',
           padding: '0 24px',
           height: '64px',
@@ -105,11 +105,11 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}
             className="desktop-nav">
-            <NavLink label="Home" path="/" />
-            <NavLink label="Shop" path="/shop" />
-            {user && <NavLink label="My Orders" path="/orders" icon={FiPackage} />}
+            <NavLink label="Home" onClick={() => navigate('/')} />
+            <NavLink label="Shop" onClick={() => navigate('/shop')} />
+            {user && <NavLink label="My Orders" onClick={() => navigate('/orders')} icon={FiPackage} />}
             {user?.app_metadata?.role === 'admin' && (
-              <NavLink label="Admin Panel" path="/admin" icon={FiSettings} />
+              <NavLink label="Admin Panel" onClick={() => navigate('/admin')} icon={FiSettings} />
             )}
             {user ? (
               <motion.span
@@ -188,6 +188,38 @@ export default function Navbar() {
             </AnimatePresence>
           </motion.div>
 
+          {/* Theme Toggle */}
+          <motion.button
+            whileHover={{ scale: 1.08, rotate: 12 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={toggleTheme}
+            aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+            title={theme === 'light' ? 'Dark theme' : 'Light theme'}
+            style={{
+              background: 'var(--glass-bg)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid var(--glass-border)',
+              color: 'var(--accent)',
+              width: '38px', height: '38px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.2s, border-color 0.2s'
+            }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span
+                key={theme}
+                initial={{ rotate: -90, opacity: 0, scale: 0.5 }}
+                animate={{ rotate: 0, opacity: 1, scale: 1 }}
+                exit={{ rotate: 90, opacity: 0, scale: 0.5 }}
+                transition={{ duration: 0.25 }}
+                style={{ display: 'flex' }}>
+                {theme === 'light' ? <FiSun size={17} /> : <FiMoon size={17} />}
+              </motion.span>
+            </AnimatePresence>
+          </motion.button>
+
           {/* Mobile hamburger */}
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -213,7 +245,7 @@ export default function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             style={{
-              background: 'rgba(28, 28, 26, 0.97)',
+              background: 'var(--nav-mobile-bg)',
               backdropFilter: 'blur(20px)',
               borderBottom: '1px solid var(--border)',
               overflow: 'hidden',

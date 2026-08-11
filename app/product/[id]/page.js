@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
 import { FiArrowLeft, FiShoppingCart, FiCheck } from 'react-icons/fi'
+import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import ProductCard from '@/app/components/ProductCard'
@@ -53,10 +54,8 @@ export default function ProductDetailPage() {
     : product?.price
 
   const handleAddToCart = () => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    for (let i = 0; i < qty; i++) cart.push(product)
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new Event('cartUpdated'))
+    appendCartItem(product, qty)
+    window.dispatchEvent(new CustomEvent('appToast', { detail: { message: `${qty > 1 ? qty + ' x ' : ''}${product.name} added to cart` } }))
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
@@ -133,14 +132,20 @@ export default function ProductDetailPage() {
             initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.55, ease: 'easeOut' }}
             style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-            <div className="product-img-wrap" style={{ overflow: 'hidden' }}>
-              <motion.img
-                src={product.image_url || '/placeholder.png'}
-                alt={product.name}
+            <div className="product-img-wrap" style={{ overflow: 'hidden', position: 'relative' }}>
+              <motion.div
                 whileHover={{ scale: 1.04 }}
                 transition={{ duration: 0.5, ease: 'easeOut' }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-              />
+                style={{ position: 'relative', width: '100%', height: '100%' }}>
+                <Image
+                  src={product.image_url || '/placeholder.png'}
+                  alt={product.name}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  style={{ objectFit: 'cover' }}
+                />
+              </motion.div>
             </div>
             {product.discount > 0 && (
               <span style={{

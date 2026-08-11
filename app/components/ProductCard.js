@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiCheck } from 'react-icons/fi'
+import Image from 'next/image'
+import { appendCartItem } from '@/lib/cartStorage'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -26,10 +28,8 @@ export default function ProductCard({ product }) {
   const handleAddToCart = (e) => {
     e.stopPropagation()
     if (added || product.stock_status === 'out of stock') return
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    cart.push(product)
-    localStorage.setItem('cart', JSON.stringify(cart))
-    window.dispatchEvent(new Event('cartUpdated'))
+    appendCartItem(product)
+    window.dispatchEvent(new CustomEvent('appToast', { detail: { message: `${product.name} added to cart` } }))
     setAdded(true)
     setTimeout(() => setAdded(false), 1800)
   }
@@ -59,14 +59,19 @@ export default function ProductCard({ product }) {
       }}>
 
       {/* Image */}
-      <div style={{ position: 'relative', overflow: 'hidden' }}>
-        <motion.img
-          src={product.image_url || '/placeholder.png'}
-          alt={product.name}
+      <div style={{ position: 'relative', overflow: 'hidden', height: '220px' }}>
+        <motion.div
           whileHover={{ scale: 1.07 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
-          style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
-        />
+          style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <Image
+            src={product.image_url || '/placeholder.png'}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1200px) 33vw, 280px"
+            style={{ objectFit: 'cover' }}
+          />
+        </motion.div>
 
         {product.discount > 0 && (
           <motion.span

@@ -7,6 +7,7 @@ import {
   FiCheckCircle, FiShoppingBag, FiArrowRight, FiHome,
   FiPhone, FiTruck, FiCreditCard, FiAlertCircle, FiCopy, FiCheck
 } from 'react-icons/fi'
+import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 
@@ -761,10 +762,12 @@ export default function CheckoutPage() {
                   const unitPrice = Math.round(discounted(item))
                   return (
                     <div key={item.id} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <img
+                      <div style={{ position: 'relative', flexShrink: 0, width: '52px', height: '52px' }}>
+                        <Image
                           src={item.image_url || '/placeholder.png'} alt={item.name}
-                          style={{ width: '52px', height: '52px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)' }}
+                          fill
+                          sizes="52px"
+                          style={{ objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border)' }}
                         />
                         <span style={{
                           position: 'absolute', top: '-5px', right: '-5px',

@@ -1,12 +1,20 @@
-'use client'
-import { useState, useEffect } from 'react'
+ 'use client'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
 import { FiTruck, FiShield, FiTag, FiLock, FiArrowRight } from 'react-icons/fi'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import ProductCard from './components/ProductCard'
+import HeroClothBackground from './components/HeroClothBackground'
+import MarqueeStrip from './components/MarqueeStrip'
+import ProductCardSkeleton from './components/ProductCardSkeleton'
+import dynamic from 'next/dynamic'
+
+// Dynamically import heavier UI pieces to improve initial render performance
+const ProductCard = dynamic(() => import('./components/ProductCard'), { ssr: false })
+const Footer = dynamic(() => import('./components/Footer'), { ssr: false })
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -20,6 +28,7 @@ const stagger = {
 
 export default function Home() {
   const router = useRouter()
+  const heroRef = useRef(null)
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -30,6 +39,42 @@ export default function Home() {
       setLoading(false)
     }
     fetchProducts()
+  }, [])
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    gsap.registerPlugin(ScrollTrigger)
+    const ctx = gsap.context(() => {
+      // Gentle parallax: hero content drifts up slower as you scroll
+      gsap.to('.hero-content', {
+        yPercent: 16,
+        opacity: 0.2,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '.hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+        },
+      })
+
+      // Magnetic buttons
+      gsap.utils.toArray('.hero-buttons button').forEach(btn => {
+        const xTo = gsap.quickTo(btn, 'x', { duration: 0.3, ease: 'power3.out' })
+        const yTo = gsap.quickTo(btn, 'y', { duration: 0.3, ease: 'power3.out' })
+        const move = e => {
+          const r = btn.getBoundingClientRect()
+          xTo((e.clientX - r.left - r.width / 2) * 0.3)
+          yTo((e.clientY - r.top - r.height / 2) * 0.3)
+        }
+        const reset = () => { xTo(0); yTo(0) }
+        btn.addEventListener('pointermove', move)
+        btn.addEventListener('pointerleave', reset)
+      })
+    }, heroRef)
+
+    return () => ctx.revert()
   }, [])
 
   const trustItems = [
@@ -62,22 +107,28 @@ export default function Home() {
       <Navbar />
 
       {/* Hero */}
-      <section className="hero-section" style={{
-        background: 'linear-gradient(135deg, var(--bg-surface) 0%, #222220 100%)',
+      <section ref={heroRef} className="hero-section" style={{
+        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
         padding: '90px 24px',
         textAlign: 'center',
         borderBottom: '1px solid var(--border)',
         position: 'relative',
         overflow: 'hidden'
       }}>
+        {/* Cloth-only background: garment silhouettes (video shown when provided) */}
+        <HeroClothBackground />
+
         {/* Background glow */}
         <div style={{
           position: 'absolute', top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
           width: '600px', height: '400px',
           background: 'radial-gradient(ellipse, rgba(212,163,115,0.1) 0%, transparent 70%)',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          zIndex: 1
         }} />
+
+        <div className="hero-content">
 
         <motion.p
           variants={fadeUp} initial="hidden" animate="visible"
@@ -158,7 +209,11 @@ export default function Home() {
             View Categories
           </motion.button>
         </motion.div>
+        </div>
       </section>
+
+      {/* Garment marquee */}
+      <MarqueeStrip />
 
       {/* Categories */}
       <section className="categories-section" style={{ padding: '60px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
@@ -218,7 +273,9 @@ export default function Home() {
         </motion.div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>Loading products...</div>
+          <div className="featured-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+            {[...Array(4)].map((_, i) => <ProductCardSkeleton key={i} index={i} />)}
+          </div>
         ) : products.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>No products yet. Check back soon!</div>
         ) : (
@@ -237,7 +294,7 @@ export default function Home() {
 
       {/* Trust Banner */}
       <section className="trust-section" style={{
-        background: 'linear-gradient(135deg, var(--bg-surface) 0%, #222220 100%)',
+        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
         borderTop: '1px solid var(--border)',
         borderBottom: '1px solid var(--border)',
         padding: '48px 24px'
