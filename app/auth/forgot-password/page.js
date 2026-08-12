@@ -17,6 +17,7 @@ export default function ForgotPasswordPage() {
 
   const handleSend = async () => {
     if (!email.trim()) { setError('Please enter your email address'); return }
+    if (!supabase) { setError('Password reset is temporarily unavailable. Please try again later.'); return }
     setLoading(true)
     setError('')
 

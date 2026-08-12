@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [done, setDone] = useState(false)
 
   const handleGoogleLogin = async () => {
+    if (!supabase) { setError('Sign up is temporarily unavailable. Please try again later.'); return }
     setGoogleLoading(true)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -30,6 +31,7 @@ export default function SignupPage() {
   const handleSignup = async () => {
     if (!email.trim() || !password) { setError('Please fill in all fields'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
+    if (!supabase) { setError('Sign up is temporarily unavailable. Please try again later.'); return }
     setLoading(true); setError('')
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) {

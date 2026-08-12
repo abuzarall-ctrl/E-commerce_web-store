@@ -31,11 +31,13 @@ export default function AdminPanel() {
   const [ordersError, setOrdersError] = useState('')
 
   async function fetchProducts() {
+    if (!supabase) return
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
     if (data) setProducts(data)
   }
 
   async function fetchOrders() {
+    if (!supabase) return
     const { data: { session } } = await supabase.auth.getSession()
     try {
       const response = await fetch('/api/admin/orders', {
@@ -72,8 +74,9 @@ export default function AdminPanel() {
     }
   }
 
-  useEffect(() => {
+useEffect(() => {
     const init = async () => {
+      if (!supabase) { router.push('/admin/login'); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.push('/admin/login'); return }
       if (session.user.app_metadata?.role !== 'admin') { router.push('/'); return }

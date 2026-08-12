@@ -18,6 +18,7 @@ export default function AdminLoginPage() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) { setError('Please fill in all fields'); return }
+    if (!supabase) { setError('Admin authentication is not configured on this server. Please try again later.'); return }
     setLoading(true)
     setError('')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })

@@ -25,6 +25,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabase) { setLoading(false); return }
     supabase.from('products').select('*').limit(4).then(({ data }) => {
       setProducts(data || [])
       setLoading(false)

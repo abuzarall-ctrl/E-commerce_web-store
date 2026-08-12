@@ -286,7 +286,11 @@ export default function CartDrawer({ isOpen, onClose }) {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={async () => {
-                const { data: { session } } = await supabase.auth.getSession()
+                let session = null
+                if (supabase) {
+                  const { data } = await supabase.auth.getSession()
+                  session = data.session
+                }
                 onClose()
                 router.push(session ? '/checkout' : '/auth/login?redirect=/checkout')
               }}

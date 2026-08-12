@@ -40,8 +40,9 @@ function ShopContent() {
   const [stockFilter, setStockFilter] = useState('All')
   const [searchFocused, setSearchFocused] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
     const fetchProducts = async () => {
+      if (!supabase) { setProducts([]); setLoading(false); return }
       const { data } = await supabase.from('products').select('*')
       if (data) setProducts(data)
       setLoading(false)

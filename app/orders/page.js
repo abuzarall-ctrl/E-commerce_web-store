@@ -47,6 +47,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     const init = async () => {
+      if (!supabase) { setOrders([]); setLoading(false); return }
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/auth/login?redirect=/orders'); return }
       const { data } = await supabase

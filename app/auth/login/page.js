@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false)
 
   const handleGoogleLogin = async () => {
+    if (!supabase) { setError('Sign in is temporarily unavailable. Please try again later.'); return }
     setGoogleLoading(true)
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -28,6 +29,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) { setError('Please fill in all fields'); return }
+    if (!supabase) { setError('Sign in is temporarily unavailable. Please try again later.'); return }
     setLoading(true)
     setError('')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })

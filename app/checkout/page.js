@@ -217,7 +217,9 @@ export default function CheckoutPage() {
       }
       setItems(Object.values(map))
 
-      const { data: { session } } = await supabase.auth.getSession()
+const { data: { session } } = supabase
+        ? await supabase.auth.getSession()
+        : { data: { session: null } }
       if (!session) {
         router.replace('/auth/login?redirect=/checkout')
       } else {
@@ -276,6 +278,12 @@ export default function CheckoutPage() {
     if (err) { setError(err); return }
     setError('')
     setPlacing(true)
+
+    if (!supabase) {
+      setError('Checkout is temporarily unavailable. Please try again later.')
+      setPlacing(false)
+      return
+    }
 
     // Verify stock status for all items before placing order
     const productIds = items.map(i => i.id)
