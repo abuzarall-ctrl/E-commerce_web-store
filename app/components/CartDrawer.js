@@ -1,5 +1,5 @@
 'use client'
-import { useSyncExternalStore } from 'react'
+import { useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight } from 'react-icons/fi'
@@ -10,7 +10,8 @@ import { subscribeCart, getCartItems, refreshCart } from '@/lib/cartStore'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const router = useRouter()
-  const items = useSyncExternalStore(subscribeCart, getCartItems, () => [])
+  const emptyCartRef = useRef([])
+  const items = useSyncExternalStore(subscribeCart, getCartItems, () => emptyCartRef.current)
 
   const writeCart = (newItems) => {
     writeCartToStorage(newItems)

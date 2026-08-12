@@ -8,6 +8,7 @@ import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import ProductCard from '@/app/components/ProductCard'
+import { appendCartItem } from '@/lib/cartStorage'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useSyncExternalStore } from 'react'
+import { useState, useEffect, useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeCart, getCartItems, initCartStore } from '@/lib/cartStore'
 import { supabase } from '@/lib/supabaseClient'
@@ -29,7 +29,8 @@ const NavLink = ({ label, onClick, icon: Icon }) => (
 export default function Navbar() {
   const router = useRouter()
   const [user, setUser] = useState(null)
-  const cartCount = useSyncExternalStore(subscribeCart, getCartItems, () => []).length
+  const emptyCartRef = useRef([])
+  const cartCount = useSyncExternalStore(subscribeCart, getCartItems, () => emptyCartRef.current).length
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [theme, setTheme] = useState(() =>

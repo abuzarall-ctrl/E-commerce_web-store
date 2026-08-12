@@ -277,6 +277,19 @@ export default function CheckoutPage() {
     setError('')
     setPlacing(true)
 
+    // Verify stock status for all items before placing order
+    const productIds = items.map(i => i.id)
+    const { data: freshProducts } = await supabase.from('products').select('id, stock_status, name').in('id', productIds)
+    const outOfStock = items.filter(item => {
+      const fresh = freshProducts?.find(p => p.id === item.id)
+      return fresh && fresh.stock_status === 'out of stock'
+    })
+    if (outOfStock.length > 0) {
+      setError(`The following items are now out of stock: ${outOfStock.map(i => i.name).join(', ')}. Please remove them from your cart.`)
+      setPlacing(false)
+      return
+    }
+
     const products = items.map(i => ({
       id: i.id, name: i.name, category: i.category,
       price: i.price, discount: i.discount,

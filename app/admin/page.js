@@ -17,14 +17,59 @@ export default function AdminPanel() {
   const [editProduct, setEditProduct] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [showBulkImport, setShowBulkImport] = useState(false)
+  const [bulkJson, setBulkJson] = useState('')
+  const [bulkError, setBulkError] = useState('')
+  const [bulkSuccess, setBulkSuccess] = useState('')
+  const [bulkImporting, setBulkImporting] = useState(false)
   const [form, setForm] = useState({
     name: '', description: '', category: 'T-Shirts',
     price: '', discount: '0', stock_status: 'in stock', image_url: ''
   })
+  const [activeTab, setActiveTab] = useState('products')
+  const [orders, setOrders] = useState([])
+  const [ordersError, setOrdersError] = useState('')
 
   async function fetchProducts() {
     const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
     if (data) setProducts(data)
+  }
+
+  async function fetchOrders() {
+    const { data: { session } } = await supabase.auth.getSession()
+    try {
+      const response = await fetch('/api/admin/orders', {
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      })
+      const result = await response.json().catch(() => ({}))
+      if (response.ok) {
+        setOrders(result.orders || [])
+        setOrdersError('')
+      } else {
+        setOrdersError(result.error || 'Unable to load orders.')
+      }
+    } catch {
+      setOrdersError('Network error loading orders.')
+    }
+  }
+
+  async function handleStatusChange(orderId, status) {
+    const { data: { session } } = await supabase.auth.getSession()
+    try {
+      const response = await fetch('/api/admin/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ id: orderId, status }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setOrdersError(result.error || 'Unable to update order.')
+        return
+      }
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o))
+    } catch {
+      setOrdersError('Network error updating order.')
+    }
   }
 
   useEffect(() => {
@@ -92,6 +137,48 @@ export default function AdminPanel() {
     fetchProducts()
   }
 
+  const handleBulkImport = async () => {
+    setBulkError('')
+    setBulkSuccess('')
+    let parsed
+    try {
+      parsed = JSON.parse(bulkJson)
+    } catch {
+      setBulkError('Invalid JSON. Please paste a valid JSON array.')
+      return
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      setBulkError('Please provide a non-empty JSON array of products.')
+      return
+    }
+    const invalid = parsed.find(p => !p.name || !p.price)
+    if (invalid) {
+      setBulkError('Every product must have at least "name" and "price" fields.')
+      return
+    }
+    setBulkImporting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ products: parsed }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setBulkError(result.error || 'Import failed.')
+      } else {
+        setBulkSuccess(`Successfully imported ${result.imported || parsed.length} product(s).`)
+        setBulkJson('')
+        fetchProducts()
+        setTimeout(() => { setBulkSuccess(''); setShowBulkImport(false) }, 2000)
+      }
+    } catch {
+      setBulkError('Network error. Please try again.')
+    }
+    setBulkImporting(false)
+  }
+
   const handleStockToggle = async (product) => {
     const next = { 'in stock': 'low stock', 'low stock': 'out of stock', 'out of stock': 'in stock' }
     await supabase.from('products').update({ stock_status: next[product.stock_status] }).eq('id', product.id)
@@ -114,19 +201,93 @@ export default function AdminPanel() {
       <Navbar />
       <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+{/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <FiSettings size={26} color="var(--accent)" /> Admin Panel
             </h1>
-            <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>{products.length} products total</p>
+            <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>
+              {activeTab === 'products' ? `${products.length} products total` : `${orders.length} orders total`}
+            </p>
           </div>
-          <button type="button" onClick={() => { resetForm(); setShowForm(true) }} style={{
-            background: 'var(--accent)', color: 'var(--bg-primary)',
-            padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
-          }}>+ Add Product</button>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '8px', padding: '4px', gap: '4px' }}>
+              {['products', 'orders'].map(tab => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab)
+                    if (tab === 'orders') fetchOrders()
+                  }}
+                  style={{
+                    padding: '8px 18px', borderRadius: '6px', fontSize: '13px', fontWeight: '700',
+                    border: 'none', cursor: 'pointer',
+                    background: activeTab === tab ? 'var(--accent)' : 'transparent',
+                    color: activeTab === tab ? 'var(--bg-primary)' : 'var(--text-muted)',
+                    textTransform: 'capitalize'
+                  }}>
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {activeTab === 'products' && (
+              <>
+                <button type="button" onClick={() => { resetForm(); setShowBulkImport(true); setBulkJson(''); setBulkError(''); setBulkSuccess('') }} style={{
+                  background: 'transparent', color: 'var(--accent)',
+                  padding: '12px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', border: '1px solid var(--accent)', cursor: 'pointer'
+                }}>Bulk Import</button>
+                <button type="button" onClick={() => { resetForm(); setShowForm(true) }} style={{
+                  background: 'var(--accent)', color: 'var(--bg-primary)',
+                  padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
+                }}>+ Add Product</button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* ── Products tab ─────────────────────────────────────────────── */}
+        {activeTab === 'products' && (
+        <>
+        {/* Bulk Import */}
+        {showBulkImport && (
+          <div style={{
+            background: 'var(--bg-surface)', border: '1px solid var(--border)',
+            borderRadius: '12px', padding: '24px', marginBottom: '32px'
+          }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
+              Bulk Import Products
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '16px' }}>
+              Paste a JSON array of products. Each object needs at least <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>name</code> and <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>price</code>. Optional: <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>description</code>, <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>category</code>, <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>discount</code>, <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>stock_status</code>, <code style={{ background: 'var(--bg-primary)', padding: '2px 6px', borderRadius: '4px' }}>image_url</code>.
+            </p>
+            {bulkError && <p role="alert" style={{ marginBottom: '12px', padding: '10px 12px', color: '#ffaaa2', background: 'rgba(226,75,74,.13)', border: '1px solid rgba(226,75,74,.45)', borderRadius: '7px', fontSize: '13px' }}>{bulkError}</p>}
+            {bulkSuccess && <p style={{ marginBottom: '12px', padding: '10px 12px', color: '#2e7d32', background: 'rgba(46,125,50,.1)', border: '1px solid rgba(46,125,50,.35)', borderRadius: '7px', fontSize: '13px' }}>{bulkSuccess}</p>}
+            <textarea
+              value={bulkJson}
+              onChange={e => setBulkJson(e.target.value)}
+              placeholder={`[\n  { "name": "Classic White Tee", "price": 999, "category": "T-Shirts", "stock_status": "in stock" },\n  { "name": "Navy Kurta", "price": 1899, "category": "Kurta", "discount": 10 }\n]`}
+              style={{
+                width: '100%', minHeight: '200px', padding: '14px',
+                background: 'var(--bg-primary)', border: '1px solid var(--border)',
+                borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px',
+                fontFamily: 'monospace', resize: 'vertical', outline: 'none', lineHeight: '1.6'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+              <button type="button" onClick={handleBulkImport} disabled={bulkImporting || !bulkJson.trim()} style={{
+                background: 'var(--accent)', color: 'var(--bg-primary)',
+                padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer',
+                opacity: bulkImporting || !bulkJson.trim() ? 0.6 : 1
+              }}>{bulkImporting ? 'Importing...' : 'Import Products'}</button>
+              <button type="button" onClick={() => { setShowBulkImport(false); setBulkJson(''); setBulkError(''); setBulkSuccess('') }} style={{
+                background: 'transparent', color: 'var(--text-muted)',
+                padding: '12px 28px', borderRadius: '8px', fontSize: '14px', border: '1px solid var(--border)', cursor: 'pointer'
+              }}>Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Add/Edit Form */}
         {showForm && (
@@ -251,6 +412,94 @@ export default function AdminPanel() {
             </tbody>
           </table>
         </div>
+        </>
+        )}
+
+        {/* ── Orders tab ─────────────────────────────────────────────── */}
+        {activeTab === 'orders' && (
+          <div>
+            {ordersError && <p role="alert" style={{ marginBottom: '16px', padding: '10px 12px', color: '#ffaaa2', background: 'rgba(226,75,74,.13)', border: '1px solid rgba(226,75,74,.45)', borderRadius: '7px', fontSize: '13px' }}>{ordersError}</p>}
+
+            {orders.length === 0 ? (
+              <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '60px', textAlign: 'center', color: 'var(--text-faint)' }}>
+                No orders yet. New customer orders will appear here.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {orders.map(order => {
+                  const items = Array.isArray(order.products) ? order.products : []
+                  const totalQty = items.reduce((s, i) => s + (i.qty || 1), 0)
+                  return (
+                    <div key={order.id} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px 24px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'monospace' }}>
+                              #{order.id?.slice(0, 8)?.toUpperCase()}
+                            </span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
+                              {order.created_at ? new Date(order.created_at).toLocaleString('en-PK', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                            {order.customer_name || 'Unknown customer'}
+                            {order.customer_city ? ` · ${order.customer_city}` : ''}
+                            {order.customer_phone ? ` · ${order.customer_phone}` : ''}
+                          </p>
+                          {order.customer_address && (
+                            <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '3px' }}>{order.customer_address}</p>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '20px', fontWeight: '800', color: 'var(--accent)' }}>
+                            Rs. {order.total?.toLocaleString?.() ?? order.total}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                            {totalQty} item{totalQty !== 1 ? 's' : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      {order.notes && (
+                        <p style={{ fontSize: '12px', color: 'var(--text-faint)', fontStyle: 'italic', marginBottom: '14px' }}>&quot;{order.notes}&quot;</p>
+                      )}
+
+                      {items.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid var(--border)', paddingTop: '14px', marginBottom: '16px' }}>
+                          {items.map((item, idx) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: 'var(--text-muted)' }}>
+                                {item.name} <span style={{ color: 'var(--text-faint)' }}>× {item.qty || 1}</span>
+                              </span>
+                              <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>
+                                Rs. {((item.finalPrice ?? item.price) * (item.qty || 1)).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)' }}>Status</span>
+                        <select
+                          value={order.status}
+                          onChange={e => handleStatusChange(order.id, e.target.value)}
+                          style={{ ...inputStyle, width: '160px', cursor: 'pointer' }}>
+                          {['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'].map(s => (
+                            <option key={s} value={s} style={{ textTransform: 'capitalize' }}>{s}</option>
+                          ))}
+                        </select>
+                        {order.status === 'cancelled' && (
+                          <span style={{ fontSize: '12px', color: 'var(--text-faint)', marginLeft: 'auto' }}>This order was cancelled</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <Footer />
     </main>
