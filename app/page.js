@@ -1,336 +1,114 @@
- 'use client'
-import { useState, useEffect, useRef } from 'react'
+'use client'
+
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
-import { FiTruck, FiShield, FiTag, FiLock, FiArrowRight } from 'react-icons/fi'
-import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { FiArrowRight, FiCheck, FiHeart, FiRotateCcw, FiTruck } from 'react-icons/fi'
 import Navbar from './components/Navbar'
-import HeroClothBackground from './components/HeroClothBackground'
-import MarqueeStrip from './components/MarqueeStrip'
 import ProductCardSkeleton from './components/ProductCardSkeleton'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 
-// Dynamically import heavier UI pieces to improve initial render performance
 const ProductCard = dynamic(() => import('./components/ProductCard'), { ssr: false })
 const Footer = dynamic(() => import('./components/Footer'), { ssr: false })
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } }
-}
-
-const stagger = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } }
-}
+const categories = [
+  { title: 'Everyday Essentials', label: 'T-Shirts & polos', category: 'T-Shirts', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=85' },
+  { title: 'Modern Tradition', label: 'Kurta collection', category: 'Kurta', image: 'https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=900&q=85' },
+  { title: 'Tailored Comfort', label: 'Trousers & more', category: 'Trousers', image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?auto=format&fit=crop&w=900&q=85' },
+]
 
 export default function Home() {
   const router = useRouter()
-  const heroRef = useRef(null)
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      const { data } = await supabase.from('products').select('*').limit(8)
-      if (data) setProducts(data)
+    supabase.from('products').select('*').limit(4).then(({ data }) => {
+      setProducts(data || [])
       setLoading(false)
-    }
-    fetchProducts()
+    })
   }, [])
 
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-
-    gsap.registerPlugin(ScrollTrigger)
-    const ctx = gsap.context(() => {
-      // Gentle parallax: hero content drifts up slower as you scroll
-      gsap.to('.hero-content', {
-        yPercent: 16,
-        opacity: 0.2,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '.hero-section',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true,
-        },
-      })
-
-      // Magnetic buttons
-      gsap.utils.toArray('.hero-buttons button').forEach(btn => {
-        const xTo = gsap.quickTo(btn, 'x', { duration: 0.3, ease: 'power3.out' })
-        const yTo = gsap.quickTo(btn, 'y', { duration: 0.3, ease: 'power3.out' })
-        const move = e => {
-          const r = btn.getBoundingClientRect()
-          xTo((e.clientX - r.left - r.width / 2) * 0.3)
-          yTo((e.clientY - r.top - r.height / 2) * 0.3)
-        }
-        const reset = () => { xTo(0); yTo(0) }
-        btn.addEventListener('pointermove', move)
-        btn.addEventListener('pointerleave', reset)
-      })
-    }, heroRef)
-
-    return () => ctx.revert()
-  }, [])
-
-  const trustItems = [
-    { icon: FiTruck, title: 'Fast Delivery', desc: 'Across Pakistan' },
-    { icon: FiShield, title: 'Quality Guaranteed', desc: 'Or money back' },
-    { icon: FiTag, title: 'Best Prices', desc: 'No hidden charges' },
-    { icon: FiLock, title: 'Secure Checkout', desc: '100% safe' },
-  ]
+  const shop = (category) => router.push(category ? `/shop?category=${encodeURIComponent(category)}` : '/shop')
 
   return (
-    <>
-      <style>{`
-        @media (max-width: 640px) {
-          .hero-section { padding: 56px 20px !important; }
-          .hero-buttons { flex-direction: column !important; align-items: stretch !important; }
-          .hero-buttons button { width: 100% !important; justify-content: center !important; }
-          .categories-section { padding: 40px 16px !important; }
-          .featured-section { padding: 0 16px 48px !important; }
-          .trust-section { padding: 36px 16px !important; }
-          .category-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .featured-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-        }
-        @media (max-width: 400px) {
-          .category-grid { grid-template-columns: repeat(2, 1fr) !important; }
-          .featured-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
-
-    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <main className="fashion-home">
       <Navbar />
 
-      {/* Hero */}
-      <section ref={heroRef} className="hero-section" style={{
-        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
-        padding: '90px 24px',
-        textAlign: 'center',
-        borderBottom: '1px solid var(--border)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Cloth-only background: garment silhouettes (video shown when provided) */}
-        <HeroClothBackground />
-
-        {/* Background glow */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '600px', height: '400px',
-          background: 'radial-gradient(ellipse, rgba(212,163,115,0.1) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          zIndex: 1
-        }} />
-
-        <div className="hero-content">
-
-        <motion.p
-          variants={fadeUp} initial="hidden" animate="visible"
-          style={{ fontSize: '12px', color: 'var(--accent)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '16px' }}>
-          Pakistani Clothing Store
-        </motion.p>
-
-        <motion.h1
-          variants={fadeUp} initial="hidden" animate="visible"
-          transition={{ delay: 0.1 }}
-          style={{
-            fontSize: 'clamp(32px, 6vw, 68px)',
-            fontWeight: '900',
-            color: 'var(--text-primary)',
-            lineHeight: '1.05',
-            marginBottom: '20px',
-            letterSpacing: '-2px'
-          }}>
-          Real Quality.<br />
-          <span style={{
-            background: 'var(--gradient-accent)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>Honest Price.</span>
-        </motion.h1>
-
-        <motion.p
-          variants={fadeUp} initial="hidden" animate="visible"
-          transition={{ delay: 0.2 }}
-          style={{ fontSize: '16px', color: 'var(--text-faint)', maxWidth: '480px', margin: '0 auto 36px', lineHeight: '1.8' }}>
-          T-Shirts, Shalwar Kameez, Kurta, Shorts & Trousers —
-          best quality at prices that make sense.
-        </motion.p>
-
-        <motion.div
-          variants={stagger} initial="hidden" animate="visible"
-          transition={{ delayChildren: 0.3 }}
-          className="hero-buttons"
-          style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <motion.button
-            variants={fadeUp}
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => router.push('/shop')}
-            style={{
-              background: 'var(--gradient-accent)',
-              color: 'var(--bg-primary)',
-              padding: '14px 32px',
-              borderRadius: '8px',
-              fontSize: '15px',
-              fontWeight: '700',
-              border: 'none',
-              cursor: 'pointer',
-              boxShadow: '0 4px 24px rgba(212,163,115,0.35)',
-              display: 'flex', alignItems: 'center', gap: '8px'
-            }}>
-            Shop Now <FiArrowRight size={16} />
-          </motion.button>
-
-          <motion.button
-            variants={fadeUp}
-            whileHover={{ scale: 1.04, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => router.push('/shop')}
-            style={{
-              background: 'rgba(212,163,115,0.08)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              color: 'var(--text-primary)',
-              padding: '14px 32px',
-              borderRadius: '8px',
-              fontSize: '15px',
-              fontWeight: '600',
-              border: '1px solid var(--glass-border)',
-              cursor: 'pointer'
-            }}>
-            View Categories
-          </motion.button>
+      <section className="fashion-hero">
+        <video className="fashion-hero__video" autoPlay muted loop playsInline preload="metadata" aria-hidden="true">
+          <source src="/videos/clothes-loop.mp4" type="video/mp4" />
+        </video>
+        <div className="fashion-hero__shade" />
+        <motion.div className="fashion-hero__content" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
+          <p className="eyebrow eyebrow--light">New season / 2026</p>
+          <h1>Style that feels<br /><em>like you.</em></h1>
+          <p className="fashion-hero__copy">Thoughtful everyday clothing, designed for comfortable confidence and made to go wherever life takes you.</p>
+          <div className="fashion-hero__actions">
+            <button className="button button--cream" onClick={() => shop()}>Shop new arrivals <FiArrowRight /></button>
+            <button className="text-button text-button--light" onClick={() => shop('Kurta')}>Explore the edit</button>
+          </div>
         </motion.div>
+        <div className="fashion-hero__note">Free delivery on orders over Rs. 3,000 <span>&bull;</span> Easy 7-day returns</div>
+      </section>
+
+      <section className="intro-section content-width">
+        <div>
+          <p className="eyebrow">The Abuzar edit</p>
+          <h2>Pieces for the <em>everyday.</em></h2>
+        </div>
+        <p className="intro-section__copy">A refined wardrobe of familiar essentials. Good fabric, considered cuts and the kind of quality you can feel from the first wear.</p>
+      </section>
+
+      <section className="category-showcase content-width">
+        {categories.map((item, index) => (
+          <motion.button className={`category-tile category-tile--${index + 1}`} key={item.title} onClick={() => shop(item.category)} whileHover={{ y: -5 }}>
+            <Image src={item.image} alt="" fill sizes="(max-width: 760px) 100vw, 33vw" />
+            <span className="category-tile__veil" />
+            <span className="category-tile__body"><small>{item.label}</small><strong>{item.title}</strong><span>Shop collection <FiArrowRight /></span></span>
+          </motion.button>
+        ))}
+      </section>
+
+      <section className="products-section content-width">
+        <div className="section-heading">
+          <div><p className="eyebrow">Made to be worn</p><h2>Featured <em>favourites.</em></h2></div>
+          <button className="text-button" onClick={() => shop()}>View all pieces <FiArrowRight /></button>
+        </div>
+        {loading ? <div className="featured-grid">{[0, 1, 2, 3].map(i => <ProductCardSkeleton key={i} index={i} />)}</div>
+          : products.length ? <div className="featured-grid">{products.map(product => <ProductCard product={product} key={product.id} />)}</div>
+          : <p className="empty-products">The new collection is on its way. Visit the shop to browse what is available.</p>}
+      </section>
+
+      <section className="editorial-band">
+        <div className="editorial-band__photo" />
+        <div className="editorial-band__content">
+          <p className="eyebrow eyebrow--light">Wear it your way</p>
+          <h2>Comfort, without<br /><em>compromise.</em></h2>
+          <p>From a relaxed morning to a full day out, the best clothes are the ones you never have to think twice about.</p>
+          <button className="button button--cream" onClick={() => shop('Shalwar Kameez')}>Discover traditional wear <FiArrowRight /></button>
         </div>
       </section>
 
-      {/* Garment marquee */}
-      <MarqueeStrip />
-
-      {/* Categories */}
-      <section className="categories-section" style={{ padding: '60px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        <motion.h2
-          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '24px' }}>
-          Shop by Category
-        </motion.h2>
-
-        <motion.div
-          variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          className="category-grid"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
-          {['T-Shirts', 'Shalwar Kameez', 'Kurta', 'Shorts', 'Trousers'].map(cat => (
-            <motion.div
-              key={cat}
-              variants={fadeUp}
-              whileHover={{ y: -4, scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => router.push(`/shop?category=${cat}`)}
-              style={{
-                background: 'var(--gradient-surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                padding: '20px 12px',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'border-color 0.2s, box-shadow 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent)'
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(212,163,115,0.12)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}>
-              <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{cat}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+      <section className="promise-section content-width">
+        <div className="promise-section__heading"><p className="eyebrow">Our promise</p><h2>Good clothing is<br /><em>simple.</em></h2></div>
+        <div className="promise-grid">
+          {[
+            [FiCheck, 'Made for real life', 'Comfortable fits and durable fabrics that earn their place in your wardrobe.'],
+            [FiTruck, 'Delivered with care', 'Reliable delivery across Pakistan, with transparent tracking along the way.'],
+            [FiRotateCcw, 'Easy returns', 'Take your time. If it is not the right fit, we make returns straightforward.'],
+            [FiHeart, 'Honest quality', 'Thoughtfully sourced pieces, offered at a price that makes sense.'],
+          ].map(([Icon, title, copy]) => <div className="promise-card" key={title}><Icon /><h3>{title}</h3><p>{copy}</p></div>)}
+        </div>
       </section>
 
-      {/* Featured Products */}
-      <section className="featured-section" style={{ padding: '0 24px 60px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        <motion.div
-          variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)' }}>
-            Featured Products
-          </h2>
-          <span
-            onClick={() => router.push('/shop')}
-            style={{ fontSize: '14px', color: 'var(--accent)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            View All <FiArrowRight size={14} />
-          </span>
-        </motion.div>
-
-        {loading ? (
-          <div className="featured-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-            {[...Array(4)].map((_, i) => <ProductCardSkeleton key={i} index={i} />)}
-          </div>
-        ) : products.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>No products yet. Check back soon!</div>
-        ) : (
-          <motion.div
-            variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
-            className="featured-grid"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
-            {products.map((product, i) => (
-              <motion.div key={product.id} variants={fadeUp} custom={i}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
+      <section className="newsletter content-width">
+        <div><p className="eyebrow">A note from us</p><h2>First look at what&apos;s <em>next.</em></h2><p>New drops, styling notes and a little more good stuff, occasionally.</p></div>
+        <form onSubmit={(event) => event.preventDefault()}><input aria-label="Email address" placeholder="Your email address" type="email" /><button className="button" type="submit">Keep me posted <FiArrowRight /></button></form>
       </section>
-
-      {/* Trust Banner */}
-      <section className="trust-section" style={{
-        background: 'linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
-        borderTop: '1px solid var(--border)',
-        borderBottom: '1px solid var(--border)',
-        padding: '48px 24px'
-      }}>
-        <motion.div
-          variants={stagger} initial="hidden" whileInView="visible" viewport={{ once: true }}
-          style={{
-            maxWidth: '1200px', margin: '0 auto',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: '24px', textAlign: 'center'
-          }}>
-          {trustItems.map(({ icon: Icon, title, desc }) => (
-            <motion.div
-              key={title}
-              variants={fadeUp}
-              whileHover={{ y: -4 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-              <div style={{
-                width: '52px', height: '52px',
-                background: 'rgba(212, 163, 115, 0.1)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: '14px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <Icon size={22} color="var(--accent)" />
-              </div>
-              <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>{title}</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-faint)' }}>{desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
       <Footer />
     </main>
-    </>
   )
 }

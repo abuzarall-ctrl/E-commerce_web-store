@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiSearch, FiX, FiFilter } from 'react-icons/fi'
@@ -18,32 +19,44 @@ const cardVariants = {
   visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: 'easeOut' } }
 }
 
-export default function ShopPage() {
+function ShopFallback() {
+  return (
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Navbar />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
+        Loading collection...
+      </div>
+      <Footer />
+    </main>
+  )
+}
+
+function ShopContent() {
+  const searchParams = useSearchParams()
   const [products, setProducts] = useState([])
-  const [filtered, setFiltered] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState(() => searchParams.get('category') || 'All')
   const [stockFilter, setStockFilter] = useState('All')
   const [searchFocused, setSearchFocused] = useState(false)
 
   useEffect(() => {
     const fetchProducts = async () => {
       const { data } = await supabase.from('products').select('*')
-      if (data) { setProducts(data); setFiltered(data) }
+      if (data) setProducts(data)
       setLoading(false)
     }
     fetchProducts()
   }, [])
 
-  useEffect(() => {
+  const filtered = useMemo(() => {
     let result = products
     if (search.length >= 2) {
       result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
     }
     if (category !== 'All') result = result.filter(p => p.category === category)
     if (stockFilter !== 'All') result = result.filter(p => p.stock_status === stockFilter)
-    setFiltered(result)
+    return result
   }, [search, category, stockFilter, products])
 
   return (
@@ -254,5 +267,13 @@ export default function ShopPage() {
         <Footer />
       </main>
     </>
+  )
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<ShopFallback />}>
+      <ShopContent />
+    </Suspense>
   )
 }

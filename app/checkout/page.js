@@ -208,23 +208,25 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', notes: '' })
 
   useEffect(() => {
-    const raw = JSON.parse(localStorage.getItem('cart') || '[]')
-    const map = {}
-    for (const p of raw) {
-      if (map[p.id]) map[p.id].qty += 1
-      else map[p.id] = { ...p, qty: 1 }
-    }
-    setItems(Object.values(map))
+    const init = async () => {
+      const raw = JSON.parse(localStorage.getItem('cart') || '[]')
+      const map = {}
+      for (const p of raw) {
+        if (map[p.id]) map[p.id].qty += 1
+        else map[p.id] = { ...p, qty: 1 }
+      }
+      setItems(Object.values(map))
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
         router.replace('/auth/login?redirect=/checkout')
       } else {
         setUser(session.user)
         setAuthChecked(true)
       }
-    })
-  }, [])
+    }
+    init()
+  }, [router])
 
   if (!authChecked) {
     return (
@@ -361,7 +363,7 @@ export default function CheckoutPage() {
             <motion.p
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
               style={{ fontSize: '14px', color: 'var(--text-faint)', lineHeight: '1.7', marginBottom: '6px' }}>
-              Thank you! We'll confirm via WhatsApp or call shortly.
+              Thank you! We&apos;ll confirm via WhatsApp or call shortly.
             </motion.p>
 
             <motion.p

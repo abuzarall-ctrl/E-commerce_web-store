@@ -542,3 +542,24 @@
   .auth-h1 { font-size: 23px; }
   .auth-foot { padding-top: 28px; }
 }
+
+/* Bring the auth experience into the same light/dark editorial storefront system. */
+.auth-page {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.auth-main { background: var(--bg-primary); }
+.auth-card { background: var(--bg-surface); border-color: var(--border); box-shadow: 0 14px 44px rgba(0,0,0,.13); }
+.auth-brand, .auth-h1, .auth-success h2 { color: var(--text-primary); }
+.auth-brand span, .auth-visual-brand span, .auth-link, .auth-success .auth-email { color: var(--accent); }
+.auth-badge { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 38%, transparent); }
+.auth-back, .auth-sub, .auth-note, .auth-legal, .auth-success p, .auth-success .auth-meta, .auth-foot { color: var(--text-faint); }
+.auth-label, .auth-spinner-text { color: var(--text-muted); }
+.auth-input { background: var(--bg-primary); color: var(--text-primary); border-color: var(--border); }
+.auth-input::placeholder { color: var(--text-faint); }.auth-input:focus { border-color: var(--accent); background: var(--bg-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.auth-btn--primary { background: var(--gradient-accent); color: var(--bg-primary); box-shadow: 0 4px 18px color-mix(in srgb, var(--accent) 24%, transparent); }
+.auth-btn--secondary { background: transparent; border-color: var(--border); color: var(--text-muted); }.auth-btn--secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: transparent; }
+.auth-visual { background: linear-gradient(150deg, #0a6a67, #17312f) !important; border-right-color: var(--border); }
+.auth-visual-brand, .auth-visual-tagline, .auth-visual-tagline b { color: #f5f2e9 !important; }.auth-visual-eyebrow { color: #a9e2d3 !important; }.auth-visual-note { color: #cde4de !important; }
+.auth-divider::before, .auth-divider::after, .auth-note { border-color: var(--border); }.auth-success-icon { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--accent); }
+[data-theme="light"] .auth-card { background: #fff; box-shadow: 0 14px 44px rgba(24,51,49,.07); }

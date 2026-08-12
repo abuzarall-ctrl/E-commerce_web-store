@@ -58,7 +58,7 @@ export default function OrdersPage() {
       setLoading(false)
     }
     init()
-  }, [])
+  }, [router])
 
   if (loading) {
     return (
@@ -177,7 +177,7 @@ export default function OrdersPage() {
                             <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>{order.customer_name}</p>
                             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{order.customer_phone}</p>
                             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{order.customer_address}{order.customer_city ? `, ${order.customer_city}` : ''}</p>
-                            {order.notes && <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px', fontStyle: 'italic' }}>"{order.notes}"</p>}
+                            {order.notes && <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px', fontStyle: 'italic' }}>&quot;{order.notes}&quot;</p>}
                           </div>
                         </div>
                       )}

@@ -16,10 +16,16 @@ export default function AdminPanel() {
   const [showForm, setShowForm] = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [form, setForm] = useState({
     name: '', description: '', category: 'T-Shirts',
     price: '', discount: '0', stock_status: 'in stock', image_url: ''
   })
+
+  async function fetchProducts() {
+    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
+    if (data) setProducts(data)
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -31,26 +37,39 @@ export default function AdminPanel() {
       setLoading(false)
     }
     init()
-  }, [])
-
-  const fetchProducts = async () => {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    if (data) setProducts(data)
-  }
+  }, [router])
 
   const resetForm = () => {
     setForm({ name: '', description: '', category: 'T-Shirts', price: '', discount: '0', stock_status: 'in stock', image_url: '' })
     setEditProduct(null)
     setShowForm(false)
+    setSaveError('')
   }
 
   const handleSave = async () => {
     if (!form.name || !form.price) return alert('Name and price are required!')
     setSaving(true)
+    setSaveError('')
+    const payload = { ...form, price: parseFloat(form.price), discount: parseFloat(form.discount || 0) }
+    let error
     if (editProduct) {
-      await supabase.from('products').update({ ...form, price: parseFloat(form.price), discount: parseFloat(form.discount) }).eq('id', editProduct.id)
+      const result = await supabase.from('products').update(payload).eq('id', editProduct.id)
+      error = result.error
     } else {
-      await supabase.from('products').insert([{ ...form, price: parseFloat(form.price), discount: parseFloat(form.discount) }])
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify(payload),
+      })
+      const result = await response.json().catch(() => ({}))
+      error = response.ok ? null : { message: result.error || 'Unable to add product.' }
+    }
+
+    if (error) {
+      setSaveError(error.message || 'We could not save this product. Please try again.')
+      setSaving(false)
+      return
     }
     await fetchProducts()
     resetForm()
@@ -103,7 +122,7 @@ export default function AdminPanel() {
             </h1>
             <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>{products.length} products total</p>
           </div>
-          <button onClick={() => { resetForm(); setShowForm(true) }} style={{
+          <button type="button" onClick={() => { resetForm(); setShowForm(true) }} style={{
             background: 'var(--accent)', color: 'var(--bg-primary)',
             padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
           }}>+ Add Product</button>
@@ -118,6 +137,7 @@ export default function AdminPanel() {
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
               {editProduct ? 'Edit Product' : 'Add New Product'}
             </h2>
+            {saveError && <p role="alert" style={{ marginBottom: '16px', padding: '10px 12px', color: '#ffaaa2', background: 'rgba(226,75,74,.13)', border: '1px solid rgba(226,75,74,.45)', borderRadius: '7px', fontSize: '13px' }}>{saveError}</p>}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
@@ -157,11 +177,11 @@ export default function AdminPanel() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button onClick={handleSave} disabled={saving} style={{
+              <button type="button" onClick={handleSave} disabled={saving} style={{
                 background: 'var(--accent)', color: 'var(--bg-primary)',
                 padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
               }}>{saving ? 'Saving...' : editProduct ? 'Update Product' : 'Save Product'}</button>
-              <button onClick={resetForm} style={{
+              <button type="button" onClick={resetForm} style={{
                 background: 'transparent', color: 'var(--text-muted)',
                 padding: '12px 28px', borderRadius: '8px', fontSize: '14px', border: '1px solid var(--border)', cursor: 'pointer'
               }}>Cancel</button>
@@ -181,7 +201,7 @@ export default function AdminPanel() {
             </thead>
             <tbody>
               {products.length === 0 ? (
-                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>No products yet. Click "Add Product" to start!</td></tr>
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>No products yet. Click &quot;Add Product&quot; to start!</td></tr>
               ) : products.map(p => (
                 <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface2)'}
@@ -190,7 +210,15 @@ export default function AdminPanel() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       {p.image_url && (
                         <div style={{ position: 'relative', width: '40px', height: '40px', flexShrink: 0 }}>
-                          <Image src={p.image_url} alt={p.name} fill sizes="40px" style={{ objectFit: 'cover', borderRadius: '6px' }} />
+                          <Image
+                            src={p.image_url}
+                            alt={p.name}
+                            fill
+                            sizes="40px"
+                            unoptimized
+                            onError={(event) => { event.currentTarget.style.display = 'none' }}
+                            style={{ objectFit: 'cover', borderRadius: '6px' }}
+                          />
                         </div>
                       )}
                       <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>{p.name}</span>
@@ -198,7 +226,7 @@ export default function AdminPanel() {
                   </td>
                   <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{p.category}</td>
                   <td style={{ padding: '14px 16px', fontSize: '14px', fontWeight: '600', color: 'var(--accent)' }}>Rs. {p.price?.toLocaleString()}</td>
-                  <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{p.discount > 0 ? `${p.discount}%` : '—'}</td>
+                  <td style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{p.discount > 0 ? `${p.discount}%` : '-'}</td>
                   <td style={{ padding: '14px 16px' }}>
                     <span onClick={() => handleStockToggle(p)} style={{
                       padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', cursor: 'pointer',
@@ -208,11 +236,11 @@ export default function AdminPanel() {
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleEdit(p)} style={{
+                      <button type="button" onClick={() => handleEdit(p)} style={{
                         padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                         background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer'
                       }}>Edit</button>
-                      <button onClick={() => handleDelete(p.id)} style={{
+                      <button type="button" onClick={() => handleDelete(p.id)} style={{
                         padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                         background: 'transparent', border: '1px solid #E24B4A', color: '#E24B4A', cursor: 'pointer'
                       }}>Delete</button>
