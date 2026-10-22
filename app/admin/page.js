@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { FiSettings, FiDownload, FiSearch, FiSave, FiExternalLink } from 'react-icons/fi'
@@ -11,6 +12,16 @@ import { parseProductSheet, CSV_TEMPLATE, downloadTextFile } from '@/lib/product
 import { getOrderDetails, orderItemCount } from '@/lib/orderPayload'
 import { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } from '@/lib/siteSettings'
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -10, transition: { duration: 0.2, ease: 'easeIn' } }
+}
+
+const stagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.05 } }
+}
 
 export default function AdminPanel() {
   const router = useRouter()
@@ -330,41 +341,56 @@ useEffect(() => {
                 { id: 'orders', label: 'Orders' },
                 { id: 'settings', label: 'Site Info' },
               ].map(tab => (
-                <button
+                <motion.button
                   key={tab.id}
                   type="button"
+                  whileHover={{ scale: activeTab === tab.id ? 1 : 1.04 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => {
                     setActiveTab(tab.id)
                     if (tab.id === 'orders') fetchOrders()
                     if (tab.id === 'settings') fetchSiteSettings()
                   }}
                   style={{
+                    position: 'relative',
                     padding: '8px 18px', borderRadius: '6px', fontSize: '13px', fontWeight: '700',
                     border: 'none', cursor: 'pointer',
-                    background: activeTab === tab.id ? 'var(--accent)' : 'transparent',
-                    color: activeTab === tab.id ? 'var(--bg-primary)' : 'var(--text-muted)'
+                    color: activeTab === tab.id ? 'var(--bg-primary)' : 'var(--text-muted)',
+                    transition: 'color 0.2s'
                   }}>
-                  {tab.label}
-                </button>
+                  {activeTab === tab.id && (
+                    <motion.span
+                      layoutId="admin-tab-pill"
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                      style={{
+                        position: 'absolute', inset: 0,
+                        background: 'var(--accent)', borderRadius: '6px', zIndex: 0
+                      }}
+                    />
+                  )}
+                  <span style={{ position: 'relative', zIndex: 1 }}>{tab.label}</span>
+                </motion.button>
               ))}
             </div>
             {activeTab === 'products' && (
               <>
-                <button type="button" onClick={() => { resetForm(); setShowBulkImport(true); setBulkText(''); setBulkError(''); setBulkSuccess('') }} style={{
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} type="button" onClick={() => { resetForm(); setShowBulkImport(true); setBulkText(''); setBulkError(''); setBulkSuccess('') }} style={{
                   background: 'transparent', color: 'var(--accent)',
                   padding: '12px 20px', borderRadius: '8px', fontSize: '14px', fontWeight: '600', border: '1px solid var(--accent)', cursor: 'pointer'
-                }}>Bulk Import</button>
-                <button type="button" onClick={() => { resetForm(); setShowForm(true) }} style={{
+                }}>Bulk Import</motion.button>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} type="button" onClick={() => { resetForm(); setShowForm(true) }} style={{
                   background: 'var(--accent)', color: 'var(--bg-primary)',
                   padding: '12px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
-                }}>+ Add Product</button>
+                }}>+ Add Product</motion.button>
               </>
             )}
           </div>
         </div>
 
         {/* ── Store snapshot ──────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px', marginBottom: '24px' }}>
+        <motion.div
+          variants={stagger} initial="hidden" animate="visible"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))', gap: '12px', marginBottom: '24px' }}>
           {[
             { label: 'Products', value: products.length, note: 'live in catalogue' },
             { label: 'Low stock', value: stats.lowStock, note: 'need a restock' },
@@ -372,25 +398,33 @@ useEffect(() => {
             { label: 'Orders', value: orders.length, note: 'all time' },
             { label: 'Revenue', value: `Rs. ${stats.revenue.toLocaleString()}`, note: 'excluding cancelled' },
           ].map(card => (
-            <div key={card.label} style={{
+            <motion.div key={card.label} variants={fadeUp} whileHover={{ y: -3 }} style={{
               background: 'var(--bg-surface)', border: '1px solid var(--border)',
-              borderRadius: '12px', padding: '16px 18px'
+              borderRadius: '12px', padding: '16px 18px', transition: 'border-color 0.2s'
             }}>
               <p style={{ fontSize: '11px', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.6px', fontWeight: '700' }}>{card.label}</p>
               <p style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', margin: '6px 0 2px' }}>{card.value}</p>
               <p style={{ fontSize: '11px', color: 'var(--text-faint)' }}>{card.note}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* ── Products tab ─────────────────────────────────────────────── */}
+        <AnimatePresence mode="wait">
         {activeTab === 'products' && (
-        <>
+        <motion.div key="products-tab" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
         {/* Bulk Import */}
+        <AnimatePresence>
         {showBulkImport && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}>
           <div style={{
             background: 'var(--bg-surface)', border: '1px solid var(--border)',
-            borderRadius: '12px', padding: '24px', marginBottom: '32px'
+            borderRadius: '12px', padding: '24px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap', marginBottom: '12px' }}>
               <div>
@@ -491,13 +525,22 @@ useEffect(() => {
               }}>Cancel</button>
             </div>
           </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Add/Edit Form */}
+        <AnimatePresence>
         {showForm && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}>
           <div style={{
             background: 'var(--bg-surface)', border: '1px solid var(--border)',
-            borderRadius: '12px', padding: '24px', marginBottom: '32px'
+            borderRadius: '12px', padding: '24px'
           }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '20px' }}>
               {editProduct ? 'Edit Product' : 'Add New Product'}
@@ -542,17 +585,19 @@ useEffect(() => {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-              <button type="button" onClick={handleSave} disabled={saving} style={{
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} type="button" onClick={handleSave} disabled={saving} style={{
                 background: 'var(--accent)', color: 'var(--bg-primary)',
                 padding: '12px 28px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', border: 'none', cursor: 'pointer'
-              }}>{saving ? 'Saving...' : editProduct ? 'Update Product' : 'Save Product'}</button>
-              <button type="button" onClick={resetForm} style={{
+              }}>{saving ? 'Saving...' : editProduct ? 'Update Product' : 'Save Product'}</motion.button>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} type="button" onClick={resetForm} style={{
                 background: 'transparent', color: 'var(--text-muted)',
                 padding: '12px 28px', borderRadius: '8px', fontSize: '14px', border: '1px solid var(--border)', cursor: 'pointer'
-              }}>Cancel</button>
+              }}>Cancel</motion.button>
             </div>
           </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
         {/* Products Table */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
@@ -583,10 +628,14 @@ useEffect(() => {
                 <tr><td colSpan="6" style={{ textAlign: 'center', padding: '60px', color: 'var(--text-faint)' }}>
                   {products.length === 0 ? 'No products yet. Click "Add Product" to start!' : 'No products match your search.'}
                 </td></tr>
-              ) : filteredProducts.map(p => {
+              ) : filteredProducts.map((p, index) => {
                 const lowStock = p.stock_status === 'low stock'
                 return (
-                <tr key={p.id} style={{ borderBottom: '1px solid var(--border)', boxShadow: lowStock ? 'inset 3px 0 0 #EF9F27' : 'none' }}
+                <motion.tr key={p.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: Math.min(index, 10) * 0.02 }}
+                  style={{ borderBottom: '1px solid var(--border)', boxShadow: lowStock ? 'inset 3px 0 0 #EF9F27' : 'none', transition: 'background-color 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface2)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <td style={{ padding: '14px 16px' }}>
@@ -619,28 +668,28 @@ useEffect(() => {
                   </td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button type="button" onClick={() => handleEdit(p)} style={{
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" onClick={() => handleEdit(p)} style={{
                         padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                         background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', cursor: 'pointer'
-                      }}>Edit</button>
-                      <button type="button" onClick={() => handleDelete(p.id)} style={{
+                      }}>Edit</motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="button" onClick={() => handleDelete(p.id)} style={{
                         padding: '6px 14px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                         background: 'transparent', border: '1px solid #E24B4A', color: '#E24B4A', cursor: 'pointer'
-                      }}>Delete</button>
+                      }}>Delete</motion.button>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-        </>
+        </motion.div>
         )}
 
         {/* ── Orders tab ─────────────────────────────────────────────── */}
         {activeTab === 'orders' && (
-          <div>
+          <motion.div key="orders-tab" variants={fadeUp} initial="hidden" animate="visible" exit="exit">
             {ordersError && <p role="alert" style={{ marginBottom: '16px', padding: '10px 12px', color: '#ffaaa2', background: 'rgba(226,75,74,.13)', border: '1px solid rgba(226,75,74,.45)', borderRadius: '7px', fontSize: '13px' }}>{ordersError}</p>}
 
             {orders.length === 0 ? (
@@ -723,11 +772,11 @@ useEffect(() => {
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {activeTab === 'settings' && (
-          <div style={{
+          <motion.div key="settings-tab" variants={fadeUp} initial="hidden" animate="visible" exit="exit" style={{
             background: 'var(--bg-surface)', border: '1px solid var(--border)',
             borderRadius: '12px', padding: '24px'
           }}>
@@ -790,7 +839,9 @@ useEffect(() => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
-              <button
+              <motion.button
+                whileHover={{ scale: siteSaving || siteLoading ? 1 : 1.02 }}
+                whileTap={{ scale: siteSaving || siteLoading ? 1 : 0.97 }}
                 type="button"
                 onClick={handleSaveSiteSettings}
                 disabled={siteSaving || siteLoading}
@@ -802,8 +853,10 @@ useEffect(() => {
                   opacity: siteSaving || siteLoading ? 0.7 : 1
                 }}>
                 <FiSave size={15} /> {siteSaving ? 'Saving...' : 'Save site info'}
-              </button>
-              <button
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: siteLoading ? 1 : 1.02 }}
+                whileTap={{ scale: siteLoading ? 1 : 0.97 }}
                 type="button"
                 onClick={fetchSiteSettings}
                 disabled={siteLoading}
@@ -813,13 +866,14 @@ useEffect(() => {
                   border: '1px solid var(--border)', cursor: siteLoading ? 'wait' : 'pointer'
                 }}>
                 {siteLoading ? 'Loading...' : 'Reload saved'}
-              </button>
+              </motion.button>
               <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
                 Phone, email and social links are also used in the footer.
               </span>
             </div>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
       <Footer />
     </main>

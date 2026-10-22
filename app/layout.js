@@ -3,6 +3,8 @@ import Script from "next/script";
 import { Nunito } from "next/font/google";
 import Toast from "./components/Toast";
 import CartSync from "./components/CartSync";
+import WishlistSync from "./components/WishlistSync";
+import ScrollProgress from "./components/ScrollProgress";
 import { SiteSettingsProvider } from "./components/SiteSettingsProvider";
 
 const nunito = Nunito({
@@ -77,6 +79,8 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
         <SiteSettingsProvider>
           <CartSync />
+          <WishlistSync />
+          <ScrollProgress />
           {children}
           <Toast />
         </SiteSettingsProvider>

@@ -1,10 +1,12 @@
 'use client'
-import { useState } from 'react'
+import { useState, useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiShoppingCart, FiCheck } from 'react-icons/fi'
+import { FiShoppingCart, FiCheck, FiHeart } from 'react-icons/fi'
 import Image from 'next/image'
 import { appendCartItem } from '@/lib/cartStorage'
+import { toggleWishlistItem } from '@/lib/wishlistStorage'
+import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -20,6 +22,9 @@ const stockTextColor = {
 export default function ProductCard({ product }) {
   const router = useRouter()
   const [added, setAdded] = useState(false)
+  const emptyWishlistRef = useRef([])
+  const wishlist = useSyncExternalStore(subscribeWishlist, getWishlistItems, () => emptyWishlistRef.current)
+  const wished = wishlist.some(item => item.id === product.id)
 
   const discountedPrice = product.discount
     ? product.price - (product.price * product.discount / 100)
@@ -32,6 +37,13 @@ export default function ProductCard({ product }) {
     window.dispatchEvent(new CustomEvent('appToast', { detail: { message: `${product.name} added to cart` } }))
     setAdded(true)
     setTimeout(() => setAdded(false), 1800)
+  }
+
+  const handleToggleWishlist = (e) => {
+    e.stopPropagation()
+    initWishlistStore()
+    toggleWishlistItem(product)
+    window.dispatchEvent(new CustomEvent('appToast', { detail: { message: wished ? `${product.name} removed from wishlist` : `${product.name} added to wishlist` } }))
   }
 
   const outOfStock = product.stock_status === 'out of stock'
@@ -98,6 +110,24 @@ export default function ProductCard({ product }) {
         }}>
           {product.stock_status}
         </span>
+
+        <motion.button
+          type="button"
+          aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.85 }}
+          onClick={handleToggleWishlist}
+          style={{
+            position: 'absolute', bottom: '10px', right: '10px',
+            width: '32px', height: '32px', borderRadius: '50%',
+            background: 'var(--glass-bg)',
+            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+            border: '1px solid var(--glass-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', minHeight: 'auto'
+          }}>
+          <FiHeart size={14} color={wished ? '#E24B4A' : 'var(--text-primary)'} fill={wished ? '#E24B4A' : 'none'} />
+        </motion.button>
       </div>
 
       {/* Info */}

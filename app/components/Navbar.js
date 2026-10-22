@@ -3,9 +3,11 @@ import { useState, useEffect, useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeCart, getCartItems, initCartStore } from '@/lib/cartStore'
 import { clearCart } from '@/lib/cartStorage'
+import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
+import { clearWishlist } from '@/lib/wishlistStorage'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon } from 'react-icons/fi'
+import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon, FiHeart } from 'react-icons/fi'
 import CartDrawer from './CartDrawer'
 
 const linkStyle = {
@@ -47,6 +49,8 @@ export default function Navbar() {
   const [user, setUser] = useState(null)
   const emptyCartRef = useRef([])
   const cartCount = useSyncExternalStore(subscribeCart, getCartItems, () => emptyCartRef.current).length
+  const emptyWishlistRef = useRef([])
+  const wishlistCount = useSyncExternalStore(subscribeWishlist, getWishlistItems, () => emptyWishlistRef.current).length
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
@@ -54,6 +58,7 @@ export default function Navbar() {
 
   useEffect(() => {
     initCartStore()
+    initWishlistStore()
     if (!supabase) return
 
     // Get initial session
@@ -74,6 +79,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut()
     clearCart()
+    clearWishlist()
     setUser(null)
     setMenuOpen(false)
     setCartOpen(false)
@@ -145,6 +151,38 @@ export default function Navbar() {
               </motion.span>
             )}
           </div>
+
+          {/* Wishlist Button */}
+          <motion.div
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => navigate('/wishlist')}
+            aria-label="Wishlist"
+            style={{
+              position: 'relative', cursor: 'pointer',
+              color: 'var(--accent)', display: 'flex', alignItems: 'center'
+            }}>
+            <FiHeart size={19} />
+            <AnimatePresence mode="wait">
+              {wishlistCount > 0 && (
+                <motion.span
+                  key={wishlistCount}
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.4, opacity: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+                  style={{
+                    position: 'absolute', top: '-7px', right: '-9px',
+                    background: 'var(--accent)', color: 'var(--bg-primary)',
+                    borderRadius: '50%', width: '16px', height: '16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '10px', fontWeight: '800'
+                  }}>
+                  {wishlistCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Cart Button */}
           <motion.div
@@ -275,6 +313,7 @@ export default function Navbar() {
               {[
                 { label: 'Home', path: '/' },
                 { label: 'Shop', path: '/shop' },
+                { label: `Wishlist${wishlistCount ? ` (${wishlistCount})` : ''}`, path: '/wishlist' },
                 ...(user ? [{ label: 'My Orders', path: '/orders' }] : []),
                 ...(showAdminLink ? [{ label: 'Admin Panel', path: '/admin' }] : [])
               ].map(({ label, path }) => (

@@ -1,14 +1,18 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useSyncExternalStore, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiShoppingCart, FiCheck } from 'react-icons/fi'
+import { FiArrowLeft, FiShoppingCart, FiCheck, FiHeart } from 'react-icons/fi'
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import ProductCard from '@/app/components/ProductCard'
+import RecentlyViewed from '@/app/components/RecentlyViewed'
 import { appendCartItem } from '@/lib/cartStorage'
+import { toggleWishlistItem } from '@/lib/wishlistStorage'
+import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
+import { addRecentlyViewed } from '@/lib/recentlyViewed'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -34,6 +38,9 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true)
   const [added, setAdded] = useState(false)
   const [qty, setQty] = useState(1)
+  const emptyWishlistRef = useRef([])
+  const wishlist = useSyncExternalStore(subscribeWishlist, getWishlistItems, () => emptyWishlistRef.current)
+  const wished = product ? wishlist.some(item => item.id === product.id) : false
 
   useEffect(() => {
     const fetch = async () => {
@@ -41,6 +48,7 @@ export default function ProductDetailPage() {
       const { data } = await supabase.from('products').select('*').eq('id', id).single()
       if (data) {
         setProduct(data)
+        addRecentlyViewed(data)
         const { data: rel } = await supabase
           .from('products').select('*')
           .eq('category', data.category).neq('id', id).limit(4)
@@ -50,6 +58,12 @@ export default function ProductDetailPage() {
     }
     fetch()
   }, [id])
+
+  const handleToggleWishlist = () => {
+    initWishlistStore()
+    toggleWishlistItem(product)
+    window.dispatchEvent(new CustomEvent('appToast', { detail: { message: wished ? `${product.name} removed from wishlist` : `${product.name} added to wishlist` } }))
+  }
 
   const discountedPrice = product?.discount
     ? product.price - (product.price * product.discount / 100)
@@ -236,35 +250,53 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Add to Cart */}
-            <motion.button
-              whileHover={{ scale: product.stock_status === 'out of stock' ? 1 : 1.02 }}
-              whileTap={{ scale: product.stock_status === 'out of stock' ? 1 : 0.97 }}
-              onClick={handleAddToCart}
-              disabled={product.stock_status === 'out of stock'}
-              style={{
-                padding: '16px',
-                background: product.stock_status === 'out of stock'
-                  ? 'var(--bg-surface2)'
-                  : added ? 'rgba(204,213,174,0.2)' : 'var(--gradient-accent)',
-                color: product.stock_status === 'out of stock'
-                  ? 'var(--text-faint)'
-                  : added ? 'var(--badge-green)' : 'var(--bg-primary)',
-                border: added ? '1px solid var(--badge-green)' : 'none',
-                borderRadius: '10px',
-                fontSize: '15px', fontWeight: '700',
-                cursor: product.stock_status === 'out of stock' ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: added || product.stock_status === 'out of stock' ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
-              }}>
-              {product.stock_status === 'out of stock' ? (
-                'Out of Stock'
-              ) : added ? (
-                <><FiCheck size={16} /> Added to Cart</>
-              ) : (
-                <><FiShoppingCart size={16} /> Add to Cart</>
-              )}
-            </motion.button>
+            {/* Add to Cart + Wishlist */}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <motion.button
+                whileHover={{ scale: product.stock_status === 'out of stock' ? 1 : 1.02 }}
+                whileTap={{ scale: product.stock_status === 'out of stock' ? 1 : 0.97 }}
+                onClick={handleAddToCart}
+                disabled={product.stock_status === 'out of stock'}
+                style={{
+                  flex: 1,
+                  padding: '16px',
+                  background: product.stock_status === 'out of stock'
+                    ? 'var(--bg-surface2)'
+                    : added ? 'rgba(204,213,174,0.2)' : 'var(--gradient-accent)',
+                  color: product.stock_status === 'out of stock'
+                    ? 'var(--text-faint)'
+                    : added ? 'var(--badge-green)' : 'var(--bg-primary)',
+                  border: added ? '1px solid var(--badge-green)' : 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px', fontWeight: '700',
+                  cursor: product.stock_status === 'out of stock' ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: added || product.stock_status === 'out of stock' ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
+                }}>
+                {product.stock_status === 'out of stock' ? (
+                  'Out of Stock'
+                ) : added ? (
+                  <><FiCheck size={16} /> Added to Cart</>
+                ) : (
+                  <><FiShoppingCart size={16} /> Add to Cart</>
+                )}
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleToggleWishlist}
+                aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+                style={{
+                  width: '54px', flexShrink: 0,
+                  background: wished ? 'rgba(226,75,74,0.1)' : 'var(--bg-surface2)',
+                  border: `1px solid ${wished ? '#E24B4A' : 'var(--border)'}`,
+                  borderRadius: '10px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', transition: 'background 0.2s, border-color 0.2s'
+                }}>
+                <FiHeart size={18} color={wished ? '#E24B4A' : 'var(--text-faint)'} fill={wished ? '#E24B4A' : 'none'} />
+              </motion.button>
+            </div>
 
             {/* Back */}
             <motion.button
@@ -312,6 +344,8 @@ export default function ProductDetailPage() {
             </motion.div>
           </section>
         )}
+
+        <RecentlyViewed excludeId={product.id} />
       </div>
 
       <Footer />
