@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Plastic, glass and melamine tableware arranged on a table">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#082c2b"/>
+      <stop offset="0.55" stop-color="#0d4a46"/>
+      <stop offset="1" stop-color="#12322f"/>
+    </linearGradient>
+    <radialGradient id="heroGlow" cx="0.72" cy="0.32" r="0.6">
+      <stop offset="0" stop-color="#8fddca" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#8fddca" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fbf4e6"/>
+      <stop offset="1" stop-color="#cdbb9c"/>
+    </linearGradient>
+    <linearGradient id="plate2" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f0c9a2"/>
+      <stop offset="1" stop-color="#c48d5e"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bde9de" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#5da99a" stop-opacity="0.22"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e0a259"/>
+      <stop offset="1" stop-color="#b86f2d"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#3f9186"/>
+      <stop offset="1" stop-color="#17645d"/>
+    </linearGradient>
+    <filter id="heroSoft"><feGaussianBlur stdDeviation="26"/></filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#heroBg)"/>
+  <rect width="1600" height="1000" fill="url(#heroGlow)"/>
+
+  <g fill="none" stroke="#9fe2d3" stroke-opacity="0.16">
+    <circle cx="1190" cy="360" r="210"/>
+    <circle cx="1190" cy="360" r="278"/>
+    <circle cx="1190" cy="360" r="350"/>
+  </g>
+
+  <ellipse cx="1120" cy="875" rx="470" ry="170" fill="#061f1e" filter="url(#heroSoft)" opacity="0.8"/>
+
+  <g>
+    <rect x="742" y="596" width="112" height="232" rx="24" fill="url(#glass)" stroke="#bdeade" stroke-opacity="0.5" stroke-width="3"/>
+    <path d="M754 696h88v116c0 8-6 14-14 14h-60c-8 0-14-6-14-14z" fill="url(#amber)" opacity="0.85"/>
+    <rect x="768" y="610" width="15" height="200" rx="7" fill="#ffffff" opacity="0.22"/>
+    <rect x="874" y="642" width="94" height="186" rx="20" fill="url(#glass)" stroke="#bdeade" stroke-opacity="0.42" stroke-width="3"/>
+    <path d="M886 728h70v88c0 6-5 12-12 12h-46c-7 0-12-6-12-12z" fill="#8bc7b6" opacity="0.5"/>
+    <rect x="892" y="654" width="13" height="160" rx="6" fill="#ffffff" opacity="0.2"/>
+  </g>
+
+  <g>
+    <ellipse cx="1015" cy="854" rx="238" ry="42" fill="#0a2422" opacity="0.75"/>
+    <ellipse cx="1015" cy="824" rx="222" ry="40" fill="url(#plate2)"/>
+    <ellipse cx="1015" cy="808" rx="176" ry="29" fill="#8e4f2c" opacity="0.22"/>
+    <ellipse cx="1015" cy="774" rx="204" ry="37" fill="url(#plate)"/>
+    <ellipse cx="1015" cy="758" rx="160" ry="26" fill="#0d4a46" opacity="0.18"/>
+    <ellipse cx="1015" cy="726" rx="186" ry="34" fill="url(#plate2)"/>
+    <ellipse cx="1015" cy="711" rx="146" ry="24" fill="#8e4f2c" opacity="0.18"/>
+    <ellipse cx="1015" cy="680" rx="162" ry="31" fill="#f6edda"/>
+    <ellipse cx="1015" cy="667" rx="126" ry="21" fill="#0d4a46" opacity="0.16"/>
+  </g>
+
+  <g>
+    <path d="M1242 626h158l-16 238c-4 58-30 88-63 88s-59-30-63-88z" fill="url(#glass)" stroke="#bdeade" stroke-opacity="0.48" stroke-width="4"/>
+    <path d="M1252 722h138l-11 142c-3 44-25 68-58 68s-55-24-58-68z" fill="url(#amber)" opacity="0.8"/>
+    <ellipse cx="1321" cy="626" rx="79" ry="15" fill="#d9f5ed" opacity="0.5"/>
+    <path d="M1408 678c54 0 82 34 82 78s-28 78-82 78" fill="none" stroke="#bde9de" stroke-opacity="0.45" stroke-width="16" stroke-linecap="round"/>
+    <rect x="1272" y="648" width="18" height="240" rx="9" fill="#ffffff" opacity="0.18"/>
+  </g>
+
+  <g>
+    <path d="M1474 740h104c0 54-22 84-52 84s-52-30-52-84z" fill="url(#teal)"/>
+    <ellipse cx="1526" cy="740" rx="54" ry="12" fill="#a9e3d7" opacity="0.7"/>
+    <ellipse cx="1526" cy="740" rx="38" ry="7" fill="#0b3b38" opacity="0.45"/>
+  </g>
+
+  <g fill="none" stroke="#8fddca" stroke-opacity="0.5" stroke-width="2">
+    <path d="M432 842c58-126 58-232 2-318"/>
+    <path d="M458 698c-40-16-60-50-58-92 40 2 68 30 78 70"/>
+    <path d="M452 760c36-12 58-42 60-82-38 0-66 26-74 64"/>
+  </g>
+
+  <path d="M0 884h1600" stroke="#9fe2d3" stroke-opacity="0.12" stroke-width="2"/>
+</svg>

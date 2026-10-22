@@ -20,12 +20,20 @@ export default function SignupPage() {
 
   const handleGoogleLogin = async () => {
     if (!supabase) { setError('Sign up is temporarily unavailable. Please try again later.'); return }
+    setError('')
     setGoogleLoading(true)
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: 'select_account' },
+      },
     })
-    setGoogleLoading(false)
+    if (error) {
+      setError(error.message)
+      setGoogleLoading(false)
+    }
+    // On success Supabase redirects the browser, so the button stays disabled.
   }
 
   const handleSignup = async () => {
@@ -138,7 +146,9 @@ export default function SignupPage() {
       <div className="auth-divider"><span>or</span></div>
 
       <AuthButton variant="secondary" onClick={handleGoogleLogin} disabled={googleLoading}>
-        <GoogleIcon /> {googleLoading ? 'Redirecting...' : 'Continue with Google'}
+        {googleLoading
+          ? <><span className="auth-btn-spinner" aria-hidden="true" /> Connecting to Google…</>
+          : <><GoogleIcon /> Continue with Google</>}
       </AuthButton>
 
       <p className="auth-legal" style={{ marginTop: '24px', marginBottom: '0' }}>

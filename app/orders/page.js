@@ -7,6 +7,7 @@ import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle, FiShoppingBag } 
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
+import { getOrderDetails } from '@/lib/orderPayload'
 
 const STATUS_CONFIG = {
   pending:    { label: 'Pending',    icon: FiClock,       bg: 'rgba(250,237,205,0.15)', color: '#FAEDCD', border: 'rgba(250,237,205,0.3)' },
@@ -113,7 +114,7 @@ export default function OrdersPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {orders.map((order, i) => {
               const isOpen = expanded === order.id
-              const products = Array.isArray(order.products) ? order.products : []
+              const { items: products, delivery, notes } = getOrderDetails(order)
               return (
                 <motion.div
                   key={order.id}
@@ -166,7 +167,7 @@ export default function OrdersPage() {
                     <div style={{ borderTop: '1px solid var(--border)', padding: '20px 24px', background: 'var(--bg-surface2)' }}>
 
                       {/* Delivery info */}
-                      {order.customer_name && (
+                      {delivery.name && (
                         <div style={{
                           background: 'var(--bg-surface)', border: '1px solid var(--border)',
                           borderRadius: '10px', padding: '14px 16px', marginBottom: '16px'
@@ -175,10 +176,10 @@ export default function OrdersPage() {
                             Delivery Details
                           </p>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>{order.customer_name}</p>
-                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{order.customer_phone}</p>
-                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{order.customer_address}{order.customer_city ? `, ${order.customer_city}` : ''}</p>
-                            {order.notes && <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px', fontStyle: 'italic' }}>&quot;{order.notes}&quot;</p>}
+                            <p style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: '600' }}>{delivery.name}</p>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{delivery.phone}</p>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{delivery.address}{delivery.city ? `, ${delivery.city}` : ''}</p>
+                            {notes && <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px', fontStyle: 'italic' }}>&quot;{notes}&quot;</p>}
                           </div>
                         </div>
                       )}
@@ -201,7 +202,7 @@ export default function OrdersPage() {
                             </div>
                             <div style={{ textAlign: 'right', flexShrink: 0 }}>
                               <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)' }}>
-                                Rs. {(item.finalPrice * item.qty).toLocaleString()}
+                                Rs. {((item.finalPrice ?? item.price) * (item.qty || 1)).toLocaleString()}
                               </p>
                               {item.discount > 0 && (
                                 <p style={{ fontSize: '11px', color: 'var(--text-faint)', textDecoration: 'line-through' }}>

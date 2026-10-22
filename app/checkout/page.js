@@ -10,6 +10,8 @@ import {
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
+import { buildOrderPayload } from '@/lib/orderPayload'
+import { readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
 
 const CITIES = [
   'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
@@ -209,13 +211,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const init = async () => {
-      const raw = JSON.parse(localStorage.getItem('cart') || '[]')
-      const map = {}
-      for (const p of raw) {
-        if (map[p.id]) map[p.id].qty += 1
-        else map[p.id] = { ...p, qty: 1 }
-      }
-      setItems(Object.values(map))
+      setItems(readCartFromStorage())
 
 const { data: { session } } = supabase
         ? await supabase.auth.getSession()
@@ -298,28 +294,24 @@ const { data: { session } } = supabase
       return
     }
 
-    const products = items.map(i => ({
+    const orderItems = items.map(i => ({
       id: i.id, name: i.name, category: i.category,
       price: i.price, discount: i.discount,
       finalPrice: Math.round(discounted(i)), qty: i.qty, image_url: i.image_url
     }))
 
     const selectedMethod = PAYMENT_METHODS.find(m => m.id === paymentMethod)
-    const notesWithPayment = [
-      form.notes.trim(),
-      `Payment: ${selectedMethod?.name || paymentMethod}`
-    ].filter(Boolean).join(' | ')
+    const products = buildOrderPayload(
+      orderItems,
+      { name: form.name, phone: form.phone, address: form.address, city: form.city },
+      { notes: form.notes, payment: selectedMethod?.name || paymentMethod }
+    )
 
     const { data, error: dbErr } = await supabase.from('orders').insert({
       user_id: user?.id || null,
       products,
       total: subtotal,
-      status: 'pending',
-      customer_name: form.name.trim(),
-      customer_phone: form.phone.trim(),
-      customer_address: form.address.trim(),
-      customer_city: form.city,
-      notes: notesWithPayment || null
+      status: 'pending'
     }).select('id').single()
 
     if (dbErr) {
@@ -337,8 +329,7 @@ const { data: { session } } = supabase
       return
     }
 
-    localStorage.removeItem('cart')
-    window.dispatchEvent(new Event('cartUpdated'))
+    writeCartToStorage([])
     setOrderId(data.id)
     setSuccess(true)
     setPlacing(false)

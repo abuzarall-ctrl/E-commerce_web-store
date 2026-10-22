@@ -7,17 +7,18 @@
 - CSS Variables (no Tailwind classes used in inline styles)
 
 ## Color Palette
-- --bg-primary: #1C1C1A
-- --bg-surface: #2A2A28
-- --bg-surface2: #333331
-- --accent: #D4A373
-- --accent-hover: #C4936A
-- --text-primary: #FEFAE0
-- --text-muted: #FAEDCD
-- --text-faint: #B8B4A0
-- --badge-green: #CCD5AE
-- --badge-green-text: #2D3D1A
-- --border: rgba(212, 163, 115, 0.15)
+- --bg-primary: #122523
+- --bg-surface: #17312F
+- --bg-surface2: #21413E
+- --accent: #7FD1BF
+- --accent-hover: #A2E1D3
+- --text-primary: #F5F2E9
+- --text-muted: #D8E6DF
+- --text-faint: #A9BFBA
+- --badge-green: #245B52
+- --badge-green-text: #E6F8F1
+- --border: rgba(184, 231, 218, 0.16)
+- Light theme overrides live under [data-theme="light"] in app/globals.css.
 
 ## Project Structure
 - app/page.js — Home page
@@ -29,12 +30,17 @@
 - app/components/Navbar.js — Navbar
 - app/components/Footer.js — Footer
 - app/components/ProductCard.js — Product card
+- app/components/CartSync.js — Per-user cart persistence (user_metadata.cart)
 - lib/supabaseClient.js — Supabase config
+- lib/categories.js — Shared category constants
+- lib/productCsv.js — CSV/TSV bulk import parser
+- lib/orderPayload.js — Order JSONB payload builder/reader
 
 ## Database Tables
 - products (id, name, description, category, price, discount, image_url, stock_status, created_at)
 - users (id, email, role, created_at)
-- orders (id, user_id, products, total, status, customer_name, customer_phone, customer_address, customer_city, notes, created_at)
+- orders (id, user_id, products, total, status, created_at)
+  - `products` stores `{ version: 2, items, delivery, notes, payment }`; legacy array payloads are still read by lib/orderPayload.js
 
 ## Completed Phases
 - Phase 1: Planning done
@@ -49,14 +55,18 @@
   - Cart drawer done
   - Checkout page done
   - Order history page done (/orders)
-  - Admin has dedicated login at /admin/login (single admin email, no DB role check)
+  - Admin login at /admin/login; access requires `app_metadata.role === 'admin'`
+  - Checkout stores delivery + payment details inside the order JSONB payload
+  - Admin CSV/TSV bulk import with downloadable template and live preview
+  - Admin dashboard snapshot cards and product search
+  - Theme toggle with persisted preference and no hydration mismatch
 
 ## Business Context
-- Pakistani clothing store
-- Sells: T-Shirts, Shalwar Kameez, Kurta, Shorts, Trousers
-- Vision: Best quality at minimal/honest prices
+- Everyday crockery store
+- Sells: Plastic Crockery, Glassware, Melamine
+- Vision: Practical, durable tableware at honest prices
 - Target: Pakistani customers
-- Admin can: add/edit/delete products, toggle stock status, apply discounts
+- Admin can: add/edit/delete products, bulk import CSV/TSV, toggle stock status, apply discounts, manage orders
 
 ## Rules
 - Always use CSS variables for colors

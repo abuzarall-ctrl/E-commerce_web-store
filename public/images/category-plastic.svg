@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Colourful plastic plates, tumblers and a jug">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#eef4ea"/>
+      <stop offset="1" stop-color="#c6dccd"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#4ba89a"/>
+      <stop offset="1" stop-color="#1b6c63"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f0a582"/>
+      <stop offset="1" stop-color="#c56a45"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fdf7e9"/>
+      <stop offset="1" stop-color="#dbc9a9"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <circle cx="740" cy="230" r="200" fill="#ffffff" opacity="0.3"/>
+  <circle cx="150" cy="930" r="250" fill="#1b6c63" opacity="0.06"/>
+  <ellipse cx="460" cy="940" rx="290" ry="48" fill="#506b5a" opacity="0.22" filter="url(#soft)"/>
+
+  <g>
+    <ellipse cx="448" cy="884" rx="246" ry="52" fill="url(#coral)"/>
+    <ellipse cx="448" cy="866" rx="202" ry="38" fill="#7c3c24" opacity="0.12"/>
+    <ellipse cx="448" cy="818" rx="262" ry="55" fill="url(#teal)"/>
+    <ellipse cx="448" cy="800" rx="214" ry="40" fill="#0b3b38" opacity="0.14"/>
+    <ellipse cx="448" cy="752" rx="222" ry="48" fill="url(#cream)"/>
+    <ellipse cx="448" cy="736" rx="180" ry="33" fill="#7c6748" opacity="0.12"/>
+    <ellipse cx="448" cy="696" rx="158" ry="35" fill="url(#coral)"/>
+    <ellipse cx="448" cy="684" rx="124" ry="22" fill="#7c3c24" opacity="0.15"/>
+  </g>
+
+  <g>
+    <path d="M600 586h166v226c0 46-32 78-78 78h-10c-46 0-78-32-78-78z" fill="url(#teal)"/>
+    <ellipse cx="683" cy="586" rx="83" ry="17" fill="#a8e6db"/>
+    <ellipse cx="683" cy="587" rx="61" ry="10" fill="#0b3b38" opacity="0.35"/>
+    <path d="M766 634c44 0 66 26 66 58s-22 58-66 58" fill="none" stroke="#1b6c63" stroke-width="17" stroke-linecap="round"/>
+    <path d="M622 610h22v236" stroke="#ffffff" stroke-opacity="0.22" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <g>
+    <path d="M158 690h112v136c0 32-22 56-56 56s-56-24-56-56z" fill="url(#coral)"/>
+    <ellipse cx="214" cy="690" rx="56" ry="12" fill="#f7c9b1"/>
+    <path d="M286 728h50v98c0 26-16 42-42 42h-8z" fill="url(#coral)" opacity="0.92"/>
+  </g>
+
+  <g fill="#1b6c63" opacity="0.18">
+    <circle cx="320" cy="250" r="9"/>
+    <circle cx="352" cy="250" r="9"/>
+    <circle cx="384" cy="250" r="9"/>
+    <circle cx="416" cy="250" r="9"/>
+  </g>
+</svg>

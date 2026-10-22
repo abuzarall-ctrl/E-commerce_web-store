@@ -522,6 +522,16 @@
 }
 @keyframes authSpin { to { transform: rotate(360deg); } }
 
+.auth-btn-spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: authSpin 0.7s linear infinite;
+  display: inline-block;
+}
+
 .auth-page :focus-visible {
   outline: 2px solid rgba(169, 119, 63, 0.6);
   outline-offset: 2px;

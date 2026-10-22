@@ -7,8 +7,9 @@ import { FiSearch, FiX, FiFilter } from 'react-icons/fi'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
+import { CATEGORIES, STOCK_STATUSES } from '@/lib/categories'
 
-const categories = ['All', 'T-Shirts', 'Shalwar Kameez', 'Kurta', 'Shorts', 'Trousers']
+const categories = ['All', ...CATEGORIES]
 
 const containerVariants = {
   hidden: {},
@@ -38,12 +39,13 @@ function ShopContent() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState(() => searchParams.get('category') || 'All')
   const [stockFilter, setStockFilter] = useState('All')
+  const [sort, setSort] = useState('featured')
   const [searchFocused, setSearchFocused] = useState(false)
 
 useEffect(() => {
     const fetchProducts = async () => {
       if (!supabase) { setProducts([]); setLoading(false); return }
-      const { data } = await supabase.from('products').select('*')
+      const { data } = await supabase.from('products').select('*').in('category', CATEGORIES)
       if (data) setProducts(data)
       setLoading(false)
     }
@@ -51,14 +53,22 @@ useEffect(() => {
   }, [])
 
   const filtered = useMemo(() => {
-    let result = products
+    let result = [...products]
     if (search.length >= 2) {
-      result = result.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+      const query = search.toLowerCase()
+      result = result.filter(p =>
+        [p.name, p.description, p.category].some(value => String(value || '').toLowerCase().includes(query))
+      )
     }
     if (category !== 'All') result = result.filter(p => p.category === category)
     if (stockFilter !== 'All') result = result.filter(p => p.stock_status === stockFilter)
+
+    const finalPrice = (product) => product.price - (product.price * (product.discount || 0) / 100)
+    if (sort === 'price-low') result.sort((a, b) => finalPrice(a) - finalPrice(b))
+    if (sort === 'price-high') result.sort((a, b) => finalPrice(b) - finalPrice(a))
+    if (sort === 'newest') result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     return result
-  }, [search, category, stockFilter, products])
+  }, [search, category, stockFilter, sort, products])
 
   return (
     <>
@@ -90,13 +100,13 @@ useEffect(() => {
             <motion.p
               initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
               style={{ fontSize: '11px', color: 'var(--accent)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '8px' }}>
-              AbuzarStore
+              AbuzarStore · Crockery edit
             </motion.p>
             <motion.h1
               className="shop-heading"
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
               style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px', letterSpacing: '-0.5px' }}>
-              Shop All Products
+              Shop the table edit
             </motion.h1>
             <AnimatePresence mode="wait">
               <motion.p
@@ -122,7 +132,7 @@ useEffect(() => {
             }} />
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Search plastic crockery, glassware, melamine..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -183,9 +193,27 @@ useEffect(() => {
             </div>
 
             <select
+              value={sort}
+              onChange={e => setSort(e.target.value)}
+              className="shop-stock-select"
+              aria-label="Sort products"
+              style={{
+                padding: '8px 16px', background: 'var(--bg-surface)',
+                border: '1px solid var(--border)', borderRadius: '20px',
+                color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer',
+                outline: 'none', flexShrink: 0
+              }}>
+              <option value="featured">Featured</option>
+              <option value="newest">Newest first</option>
+              <option value="price-low">Price: low to high</option>
+              <option value="price-high">Price: high to low</option>
+            </select>
+
+            <select
               value={stockFilter}
               onChange={e => setStockFilter(e.target.value)}
               className="shop-stock-select"
+              aria-label="Filter by stock"
               style={{
                 padding: '8px 16px', background: 'var(--bg-surface)',
                 border: '1px solid var(--border)', borderRadius: '20px',
@@ -193,9 +221,9 @@ useEffect(() => {
                 outline: 'none', flexShrink: 0
               }}>
               <option value="All">All Stock</option>
-              <option value="in stock">In Stock</option>
-              <option value="low stock">Low Stock</option>
-              <option value="out of stock">Out of Stock</option>
+              {STOCK_STATUSES.map(status => (
+                <option key={status} value={status}>{status.replace(/\b\w/g, char => char.toUpperCase())}</option>
+              ))}
             </select>
           </motion.div>
 
@@ -233,7 +261,7 @@ useEffect(() => {
               <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '20px' }}>Try adjusting your filters or search term</p>
               <motion.button
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                onClick={() => { setSearch(''); setCategory('All'); setStockFilter('All') }}
+                onClick={() => { setSearch(''); setCategory('All'); setStockFilter('All'); setSort('featured') }}
                 style={{
                   padding: '10px 24px', background: 'var(--gradient-accent)',
                   color: 'var(--bg-primary)', border: 'none', borderRadius: '8px',
@@ -245,7 +273,7 @@ useEffect(() => {
           ) : (
             <AnimatePresence mode="wait">
               <motion.div
-                key={`${category}-${stockFilter}-${search}`}
+                key={`${category}-${stockFilter}-${sort}-${search}`}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"

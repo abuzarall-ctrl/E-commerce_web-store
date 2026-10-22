@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Everyday plates, bowls and glassware on a table">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a3f3b"/>
+      <stop offset="0.6" stop-color="#0d514b"/>
+      <stop offset="1" stop-color="#123a36"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#f6ead6"/>
+      <stop offset="1" stop-color="#c9b392"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#eda27a"/>
+      <stop offset="1" stop-color="#b96a43"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#8fd6c7"/>
+      <stop offset="1" stop-color="#3d8f80"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8f5ed" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#72b3a5" stop-opacity="0.24"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e0a259"/>
+      <stop offset="1" stop-color="#b86f2d"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="30"/></filter>
+  </defs>
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+  <circle cx="900" cy="250" r="300" fill="#8fddca" opacity="0.08"/>
+  <circle cx="900" cy="250" r="210" fill="none" stroke="#bfe9de" stroke-opacity="0.18" stroke-width="2"/>
+  <path d="M0 930h1200" stroke="#9fe2d3" stroke-opacity="0.14" stroke-width="3"/>
+  <ellipse cx="600" cy="966" rx="430" ry="82" fill="#041f1d" opacity="0.55" filter="url(#soft)"/>
+
+  <g>
+    <path d="M214 678h180v158c0 46-34 80-78 80h-24c-44 0-78-34-78-80z" fill="url(#coral)"/>
+    <ellipse cx="304" cy="678" rx="90" ry="18" fill="#f4c4a7"/>
+    <ellipse cx="304" cy="679" rx="66" ry="11" fill="#7c3c24" opacity="0.3"/>
+  </g>
+
+  <g>
+    <path d="M806 682h174l-16 176c-4 54-30 82-71 82s-67-28-71-82z" fill="url(#glass)" stroke="#d6f4ec" stroke-opacity="0.4" stroke-width="4"/>
+    <path d="M816 766h152l-12 96c-3 34-27 56-64 56s-61-22-64-56z" fill="url(#amber)" opacity="0.82"/>
+    <ellipse cx="893" cy="682" rx="87" ry="17" fill="#eafff9" opacity="0.5"/>
+    <path d="M980 730c48 0 72 28 72 64s-24 64-72 64" fill="none" stroke="#d6f4ec" stroke-opacity="0.35" stroke-width="14" stroke-linecap="round"/>
+  </g>
+
+  <g>
+    <ellipse cx="560" cy="902" rx="236" ry="46" fill="#e6d4b7"/>
+    <ellipse cx="560" cy="884" rx="200" ry="36" fill="url(#teal)"/>
+    <ellipse cx="560" cy="866" rx="160" ry="27" fill="#0a3f3b" opacity="0.2"/>
+    <ellipse cx="560" cy="838" rx="182" ry="32" fill="url(#plate)"/>
+    <ellipse cx="560" cy="822" rx="144" ry="24" fill="#0a3f3b" opacity="0.14"/>
+    <ellipse cx="560" cy="792" rx="150" ry="28" fill="url(#coral)"/>
+    <ellipse cx="560" cy="778" rx="116" ry="20" fill="#7c3c24" opacity="0.16"/>
+  </g>
+
+  <g>
+    <rect x="362" y="610" width="94" height="164" rx="20" fill="url(#glass)" stroke="#d6f4ec" stroke-opacity="0.45" stroke-width="3"/>
+    <path d="M372 684h74v72c0 7-5 12-12 12h-50c-7 0-12-5-12-12z" fill="#8bc7b6" opacity="0.5"/>
+    <rect x="386" y="622" width="12" height="140" rx="6" fill="#ffffff" opacity="0.2"/>
+  </g>
+
+  <g fill="none" stroke="#9fe2d3" stroke-opacity="0.16">
+    <circle cx="230" cy="380" r="150"/>
+    <circle cx="230" cy="380" r="190"/>
+  </g>
+</svg>

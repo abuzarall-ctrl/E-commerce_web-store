@@ -2,11 +2,11 @@
 // variant="admin" swaps the visual panel to a charcoal tone for the admin portal.
 import { FiShield } from 'react-icons/fi'
 
-const TSHIRT = 'M28 14 L8 32 L22 38 L22 82 L78 82 L78 38 L92 32 L72 14 Q60 22 50 22 Q40 22 28 14 Z'
-const TROUSER = 'M14 2 L86 2 L86 12 L68 12 L68 58 Q70 80 86 98 L56 98 L50 64 L44 98 L14 98 Q30 80 32 58 L32 12 Z'
-const KURTA = 'M26 10 L4 32 L20 40 L20 96 L80 96 L80 40 L96 32 L74 10 Q62 20 50 20 Q38 20 26 10 Z'
+const PLATE = 'M50 14a36 36 0 1 0 0 72a36 36 0 1 0 0-72Zm0 12a24 24 0 1 1 0 48a24 24 0 1 1 0-48Z'
+const MUG = 'M20 28h46v40a14 14 0 0 1-14 14H34a14 14 0 0 1-14-14Z M66 36h8a11 11 0 0 1 0 22h-8'
+const BOWL = 'M16 48h68c-3 20-15 32-34 32S19 68 16 48Z M12 48h76'
 
-const GARMENTS = [TSHIRT, TROUSER, KURTA]
+const SHAPES = [PLATE, MUG, BOWL]
 
 export default function AuthLayout({ variant = 'customer', children }) {
   const isAdmin = variant === 'admin'
@@ -19,7 +19,7 @@ export default function AuthLayout({ variant = 'customer', children }) {
         </div>
 
         <div className="auth-visual-art">
-          {GARMENTS.map((d, i) => (
+          {SHAPES.map((d, i) => (
             <div key={i} className={`auth-garment auth-garment--${i + 1}`}>
               <svg viewBox="0 0 100 100" fill="none" stroke={isAdmin ? '#D4A373' : '#A9773F'} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d={d} />
@@ -36,7 +36,7 @@ export default function AuthLayout({ variant = 'customer', children }) {
             {isAdmin ? (
               <>Manage your store <b>securely.</b></>
             ) : (
-              <>Premium Pakistani <b>clothing.</b></>
+              <>Everyday crockery, <b>made to be used.</b></>
             )}
           </p>
           {isAdmin && (
@@ -61,7 +61,7 @@ export default function AuthLayout({ variant = 'customer', children }) {
           )}
           <div className="auth-card">{children}</div>
         </div>
-        <div className="auth-foot">Serving Pakistan with Pride</div>
+        <div className="auth-foot">Serving Pakistan with care</div>
       </main>
     </div>
   )

@@ -2,6 +2,7 @@
 import { useState, useEffect, useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { subscribeCart, getCartItems, initCartStore } from '@/lib/cartStore'
+import { clearCart } from '@/lib/cartStorage'
 import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon } from 'react-icons/fi'
@@ -14,6 +15,21 @@ const linkStyle = {
   fontWeight: '500',
   padding: '4px 0',
   position: 'relative'
+}
+
+function subscribeTheme(onChange) {
+  const observer = new MutationObserver(onChange)
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  queueMicrotask(onChange)
+  return () => observer.disconnect()
+}
+
+function getThemeSnapshot() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+}
+
+function getServerThemeSnapshot() {
+  return 'dark'
 }
 
 const NavLink = ({ label, onClick, icon: Icon }) => (
@@ -33,19 +49,17 @@ export default function Navbar() {
   const cartCount = useSyncExternalStore(subscribeCart, getCartItems, () => emptyCartRef.current).length
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [theme, setTheme] = useState(() =>
-    typeof document !== 'undefined' ? document.documentElement.dataset.theme || 'dark' : 'dark'
-  )
+  const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
+  const showAdminLink = user?.app_metadata?.role === 'admin'
 
   useEffect(() => {
+    initCartStore()
     if (!supabase) return
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
     })
-
-    initCartStore()
 
     // Listen for sign-in/sign-out (catches Google OAuth redirect)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -59,8 +73,10 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     if (supabase) await supabase.auth.signOut()
+    clearCart()
     setUser(null)
     setMenuOpen(false)
+    setCartOpen(false)
     router.push('/')
   }
 
@@ -68,7 +84,6 @@ export default function Navbar() {
     const next = theme === 'light' ? 'dark' : 'light'
     document.documentElement.dataset.theme = next
     localStorage.setItem('theme', next)
-    setTheme(next)
   }
 
   const navigate = (path) => { router.push(path); setMenuOpen(false) }
@@ -111,7 +126,7 @@ export default function Navbar() {
             <NavLink label="Home" onClick={() => navigate('/')} />
             <NavLink label="Shop" onClick={() => navigate('/shop')} />
             {user && <NavLink label="My Orders" onClick={() => navigate('/orders')} icon={FiPackage} />}
-            {user?.app_metadata?.role === 'admin' && (
+            {showAdminLink && (
               <NavLink label="Admin Panel" onClick={() => navigate('/admin')} icon={FiSettings} />
             )}
             {user ? (
@@ -261,7 +276,7 @@ export default function Navbar() {
                 { label: 'Home', path: '/' },
                 { label: 'Shop', path: '/shop' },
                 ...(user ? [{ label: 'My Orders', path: '/orders' }] : []),
-                ...(user?.app_metadata?.role === 'admin' ? [{ label: 'Admin Panel', path: '/admin' }] : [])
+                ...(showAdminLink ? [{ label: 'Admin Panel', path: '/admin' }] : [])
               ].map(({ label, path }) => (
                 <motion.span
                   key={path}

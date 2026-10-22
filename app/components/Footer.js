@@ -1,7 +1,9 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { FiMapPin, FiPhone, FiMail, FiHeart, FiArrowRight } from 'react-icons/fi'
+import { FiMapPin, FiPhone, FiMail, FiHeart, FiArrowRight, FiInstagram, FiFacebook, FiMessageCircle } from 'react-icons/fi'
+import { CATEGORIES } from '@/lib/categories'
+import { useSiteSettings } from './SiteSettingsProvider'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,10 +14,24 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.1 } }
 }
 
+const socialStyle = {
+  width: '32px', height: '32px', borderRadius: '8px',
+  border: '1px solid var(--border)', background: 'rgba(212, 163, 115, 0.1)',
+  color: 'var(--accent)', display: 'flex', alignItems: 'center',
+  justifyContent: 'center', textDecoration: 'none'
+}
+
 export default function Footer() {
   const router = useRouter()
+  const settings = useSiteSettings()
 
-  const categories = ['T-Shirts', 'Shalwar Kameez', 'Kurta', 'Shorts', 'Trousers']
+  const categories = CATEGORIES
+  const contact = [
+    { icon: FiMapPin, text: settings.address },
+    { icon: FiPhone, text: settings.phone, href: `tel:${settings.phone.replace(/\s+/g, '')}` },
+    { icon: FiMail, text: settings.email, href: `mailto:${settings.email}` },
+  ]
+  const whatsappDigits = settings.whatsapp.replace(/[^\d]/g, '')
 
   return (
     <footer style={{
@@ -47,8 +63,21 @@ export default function Footer() {
               </span>
             </div>
             <p style={{ fontSize: '13px', color: 'var(--text-faint)', lineHeight: '1.8', marginBottom: '20px' }}>
-              Pakistani clothing at its finest. Real quality, honest prices. Serving customers across Pakistan.
+              {settings.footerNote}
             </p>
+            {(settings.instagram || settings.facebook || whatsappDigits) && (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {settings.instagram && (
+                  <a href={settings.instagram} target="_blank" rel="noreferrer" aria-label="Instagram" style={socialStyle}><FiInstagram size={15} /></a>
+                )}
+                {settings.facebook && (
+                  <a href={settings.facebook} target="_blank" rel="noreferrer" aria-label="Facebook" style={socialStyle}><FiFacebook size={15} /></a>
+                )}
+                {whatsappDigits && (
+                  <a href={`https://wa.me/${whatsappDigits}`} target="_blank" rel="noreferrer" aria-label="WhatsApp" style={socialStyle}><FiMessageCircle size={15} /></a>
+                )}
+              </div>
+            )}
           </motion.div>
 
           {/* Categories */}
@@ -61,7 +90,7 @@ export default function Footer() {
               {categories.map(cat => (
                 <div
                   key={cat}
-                  onClick={() => router.push(`/shop?category=${cat}`)}
+                  onClick={() => router.push(`/shop?category=${encodeURIComponent(cat)}`)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '8px',
                     fontSize: '13px', color: 'var(--text-faint)',
@@ -83,12 +112,8 @@ export default function Footer() {
               textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '20px'
             }}>Contact Us</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { icon: FiMapPin, text: 'Karachi, Pakistan' },
-                { icon: FiPhone, text: '+92 300 0000000' },
-                { icon: FiMail, text: 'support@abuzarstore.pk' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {contact.map(({ icon: Icon, text, href }) => (
+                <div key={`${text}-${href || ''}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{
                     width: '30px', height: '30px',
                     background: 'rgba(212, 163, 115, 0.1)',
@@ -99,7 +124,11 @@ export default function Footer() {
                   }}>
                     <Icon size={13} color="var(--accent)" />
                   </div>
-                  <span style={{ fontSize: '13px', color: 'var(--text-faint)' }}>{text}</span>
+                  {href ? (
+                    <a href={href} style={{ fontSize: '13px', color: 'var(--text-faint)', textDecoration: 'none' }}>{text}</a>
+                  ) : (
+                    <span style={{ fontSize: '13px', color: 'var(--text-faint)' }}>{text}</span>
+                  )}
                 </div>
               ))}
             </div>

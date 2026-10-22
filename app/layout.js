@@ -1,35 +1,48 @@
 import "./globals.css";
 import Script from "next/script";
+import { Nunito } from "next/font/google";
 import Toast from "./components/Toast";
+import CartSync from "./components/CartSync";
+import { SiteSettingsProvider } from "./components/SiteSettingsProvider";
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-nunito",
+});
 
 export const metadata = {
   title: {
-    default: "AbuzarStore — Pakistani Clothing",
+    default: "AbuzarStore — Plastic, Glass & Melamine Crockery",
     template: "%s | AbuzarStore",
   },
   description:
-    "Real quality at honest prices. T-Shirts, Shalwar Kameez, Kurta, Shorts & Trousers. Shop online across Pakistan.",
+    "Shop everyday crockery in plastic, glass and melamine. Practical plates, bowls, jugs and drinkware with delivery across Pakistan.",
   keywords: [
-    "Pakistani clothing",
-    "shalwar kameez",
-    "kurta",
-    "t-shirts",
+    "crockery online Pakistan",
+    "plastic crockery",
+    "melamine dinner set",
+    "glassware set",
+    "plastic dinner plates",
+    "melamine plates",
+    "kitchen and dining",
     "online shopping Pakistan",
     "AbuzarStore",
   ],
   openGraph: {
-    title: "AbuzarStore — Pakistani Clothing",
+    title: "AbuzarStore — Plastic, Glass & Melamine Crockery",
     description:
-      "Real quality at honest prices. T-Shirts, Shalwar Kameez, Kurta, Shorts & Trousers. Shop online across Pakistan.",
+      "Everyday crockery in plastic, glass and melamine. Practical pieces for the table, delivered across Pakistan.",
     type: "website",
     locale: "en_PK",
     siteName: "AbuzarStore",
   },
   twitter: {
     card: "summary",
-    title: "AbuzarStore — Pakistani Clothing",
+    title: "AbuzarStore — Plastic, Glass & Melamine Crockery",
     description:
-      "Real quality at honest prices. T-Shirts, Shalwar Kameez, Kurta, Shorts & Trousers.",
+      "Plastic, glass and melamine crockery delivered across Pakistan.",
   },
   robots: {
     index: true,
@@ -48,16 +61,11 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className="h-full antialiased"
+      className={`${nunito.variable} h-full antialiased`}
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
         <Script
           id="theme-init"
           strategy="beforeInteractive"
@@ -67,8 +75,11 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
-        <Toast />
+        <SiteSettingsProvider>
+          <CartSync />
+          {children}
+          <Toast />
+        </SiteSettingsProvider>
       </body>
     </html>
   );

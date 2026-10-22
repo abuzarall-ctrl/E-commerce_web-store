@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { CATEGORIES, STOCK_STATUSES } from '@/lib/categories'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -36,10 +37,10 @@ export async function POST(request) {
   const products = raw.map(p => ({
     name: String(p.name || '').trim(),
     description: String(p.description || '').trim(),
-    category: p.category || 'T-Shirts',
+    category: CATEGORIES.includes(p.category) ? p.category : CATEGORIES[0],
     price: Number(p.price),
-    discount: Number(p.discount || 0),
-    stock_status: p.stock_status || 'in stock',
+    discount: Math.min(100, Math.max(0, Number(p.discount) || 0)),
+    stock_status: STOCK_STATUSES.includes(p.stock_status) ? p.stock_status : STOCK_STATUSES[0],
     image_url: String(p.image_url || '').trim(),
   }))
 

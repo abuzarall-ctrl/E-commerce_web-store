@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Three drinking glasses with amber and clear drinks">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#e6efec"/>
+      <stop offset="1" stop-color="#bcd2cc"/>
+    </linearGradient>
+    <linearGradient id="gl" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.72"/>
+      <stop offset="0.5" stop-color="#e9fffa" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#9fd6c9" stop-opacity="0.42"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e0a259"/>
+      <stop offset="1" stop-color="#b86f2d"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <circle cx="760" cy="270" r="190" fill="#ffffff" opacity="0.34"/>
+  <circle cx="180" cy="920" r="240" fill="#0d4a46" opacity="0.05"/>
+  <ellipse cx="470" cy="955" rx="320" ry="56" fill="#5e7d74" opacity="0.26" filter="url(#soft)"/>
+
+  <g>
+    <path d="M250 520h150v290c0 34-26 60-58 60h-34c-32 0-58-26-58-60z" fill="url(#gl)" stroke="#ffffff" stroke-opacity="0.65" stroke-width="4"/>
+    <path d="M258 650h134v160c0 26-20 46-46 46h-42c-26 0-46-20-46-46z" fill="url(#amber)" opacity="0.92"/>
+    <path d="M268 536h18v300" stroke="#ffffff" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+    <ellipse cx="325" cy="520" rx="75" ry="16" fill="#ffffff" opacity="0.55"/>
+
+    <path d="M470 470h160v330c0 38-30 68-66 68h-28c-36 0-66-30-66-68z" fill="url(#gl)" stroke="#ffffff" stroke-opacity="0.7" stroke-width="4"/>
+    <path d="M480 620h140v180c0 28-22 50-50 50h-40c-28 0-50-22-50-50z" fill="#e8fff8" opacity="0.62"/>
+    <path d="M492 488h18v350" stroke="#ffffff" stroke-opacity="0.6" stroke-width="11" stroke-linecap="round"/>
+    <ellipse cx="550" cy="470" rx="80" ry="17" fill="#ffffff" opacity="0.6"/>
+
+    <path d="M700 560h132v262c0 32-24 56-54 56h-24c-30 0-54-24-54-56z" fill="url(#gl)" stroke="#ffffff" stroke-opacity="0.6" stroke-width="4"/>
+    <path d="M708 690h116v132c0 24-18 42-42 42h-32c-24 0-42-18-42-42z" fill="url(#amber)" opacity="0.85"/>
+    <path d="M718 578h16v270" stroke="#ffffff" stroke-opacity="0.5" stroke-width="9" stroke-linecap="round"/>
+  </g>
+
+  <g fill="#ffffff" opacity="0.5">
+    <circle cx="350" cy="430" r="13"/>
+    <circle cx="590" cy="392" r="16"/>
+    <circle cx="760" cy="480" r="11"/>
+  </g>
+</svg>

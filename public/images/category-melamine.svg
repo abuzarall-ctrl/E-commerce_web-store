@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Decorated melamine dinner plate, bowl and cup">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#f7ecdd"/>
+      <stop offset="1" stop-color="#e4c9aa"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="1" stop-color="#e2d1b6"/>
+    </linearGradient>
+    <linearGradient id="teal" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#3f9186"/>
+      <stop offset="1" stop-color="#17645d"/>
+    </linearGradient>
+    <linearGradient id="coral" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#eaa17d"/>
+      <stop offset="1" stop-color="#bc6a44"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+  <rect width="900" height="1200" fill="url(#bg)"/>
+  <circle cx="720" cy="250" r="210" fill="#ffffff" opacity="0.32"/>
+  <circle cx="160" cy="950" r="260" fill="#bc6a44" opacity="0.06"/>
+  <ellipse cx="470" cy="930" rx="300" ry="50" fill="#7d5d3f" opacity="0.24" filter="url(#soft)"/>
+
+  <g>
+    <ellipse cx="450" cy="806" rx="292" ry="62" fill="url(#plate)"/>
+    <ellipse cx="450" cy="786" rx="238" ry="47" fill="url(#teal)" opacity="0.9"/>
+    <ellipse cx="450" cy="784" rx="210" ry="40" fill="url(#plate)"/>
+    <g fill="#eaa17d" opacity="0.9">
+      <circle cx="450" cy="748" r="12"/>
+      <circle cx="406" cy="756" r="12"/>
+      <circle cx="494" cy="756" r="12"/>
+      <circle cx="372" cy="780" r="12"/>
+      <circle cx="528" cy="780" r="12"/>
+      <circle cx="364" cy="814" r="12"/>
+      <circle cx="536" cy="814" r="12"/>
+      <circle cx="386" cy="844" r="12"/>
+      <circle cx="514" cy="844" r="12"/>
+      <circle cx="450" cy="852" r="12"/>
+    </g>
+    <ellipse cx="450" cy="786" rx="120" ry="20" fill="#fdf8ee" opacity="0.8"/>
+  </g>
+
+  <g>
+    <ellipse cx="690" cy="640" rx="106" ry="24" fill="url(#teal)"/>
+    <path d="M584 640h212v28c0 64-44 108-106 108s-106-44-106-108z" fill="url(#teal)"/>
+    <ellipse cx="690" cy="644" rx="84" ry="17" fill="#0b3b38" opacity="0.3"/>
+    <path d="M600 668c26 86 142 86 180 0" fill="none" stroke="#eaa17d" stroke-opacity="0.75" stroke-width="8"/>
+  </g>
+
+  <g>
+    <path d="M146 726h132v138c0 38-26 66-66 66s-66-28-66-66z" fill="url(#coral)"/>
+    <ellipse cx="212" cy="726" rx="66" ry="14" fill="#f8cbb4"/>
+    <ellipse cx="212" cy="727" rx="47" ry="8" fill="#7c3c24" opacity="0.3"/>
+    <path d="M278 768h44c30 0 50 20 50 46s-20 46-50 46h-44v-24h38c16 0 26-10 26-22s-10-22-26-22h-38z" fill="url(#coral)"/>
+  </g>
+</svg>

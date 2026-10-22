@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { CATEGORIES, STOCK_STATUSES } from '@/lib/categories'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -26,10 +27,10 @@ export async function POST(request) {
   const product = {
     name: String(body.name || '').trim(),
     description: String(body.description || '').trim(),
-    category: body.category,
+    category: CATEGORIES.includes(body.category) ? body.category : CATEGORIES[0],
     price: Number(body.price),
-    discount: Number(body.discount || 0),
-    stock_status: body.stock_status,
+    discount: Math.min(100, Math.max(0, Number(body.discount) || 0)),
+    stock_status: STOCK_STATUSES.includes(body.stock_status) ? body.stock_status : STOCK_STATUSES[0],
     image_url: String(body.image_url || '').trim(),
   }
   if (!product.name || !Number.isFinite(product.price)) return NextResponse.json({ error: 'Product name and a valid price are required.' }, { status: 400 })
