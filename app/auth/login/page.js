@@ -1,15 +1,19 @@
 'use client'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
-import { useRouter } from 'next/navigation'
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiArrowRight } from 'react-icons/fi'
+import { isAdminRole } from '@/lib/adminRoles'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiArrowRight, FiCheckCircle } from 'react-icons/fi'
 import AuthLayout from '@/app/components/auth/AuthLayout'
 import AuthInput from '@/app/components/auth/AuthInput'
 import AuthButton, { GoogleIcon } from '@/app/components/auth/AuthButton'
 import '@/app/auth/auth.css'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const created = searchParams.get('created') === '1'
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -21,18 +25,17 @@ export default function LoginPage() {
     if (!supabase) { setError('Sign in is temporarily unavailable. Please try again later.'); return }
     setError('')
     setGoogleLoading(true)
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: { prompt: 'select_account' },
       },
     })
-    if (error) {
-      setError(error.message)
+    if (oauthError) {
+      setError(oauthError.message)
       setGoogleLoading(false)
     }
-    // On success Supabase redirects the browser, so the button stays disabled.
   }
 
   const handleLogin = async () => {
@@ -40,18 +43,21 @@ export default function LoginPage() {
     if (!supabase) { setError('Sign in is temporarily unavailable. Please try again later.'); return }
     setLoading(true)
     setError('')
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-    } else {
-      const params = new URLSearchParams(window.location.search)
-      const redirect = params.get('redirect') || '/'
-      router.push(data.user?.app_metadata?.role === 'admin' ? '/admin' : redirect)
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+
+    if (loginError) {
+      setError(loginError.message)
+      setLoading(false)
+      return
     }
+
+    const params = new URLSearchParams(window.location.search)
+    const redirect = params.get('redirect') || '/'
+    router.push(isAdminRole(data.user?.app_metadata?.role) ? '/admin' : redirect)
     setLoading(false)
   }
 
-  const onKeyDown = (e) => { if (e.key === 'Enter') handleLogin() }
+  const onKeyDown = (event) => { if (event.key === 'Enter') handleLogin() }
 
   return (
     <AuthLayout>
@@ -60,9 +66,21 @@ export default function LoginPage() {
       </button>
 
       <h1 className="auth-h1">Welcome back</h1>
-      <p className="auth-sub">Sign in to your AbuzarStore account</p>
+      <p className="auth-sub">Sign in with your email and password</p>
 
       <div className="auth-fields">
+        {created && (
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: '8px',
+            padding: '12px 14px', borderRadius: '8px',
+            background: 'rgba(47,127,117,0.1)', border: '1px solid rgba(47,127,117,0.35)',
+            fontSize: '13px', color: 'var(--badge-green-text)'
+          }}>
+            <FiCheckCircle size={15} style={{ flexShrink: 0, marginTop: '1px' }} />
+            Password created successfully. Sign in with your new password.
+          </div>
+        )}
+
         <AuthInput
           id="login-email"
           label="Email Address"
@@ -90,7 +108,7 @@ export default function LoginPage() {
           }
           icon={FiLock}
           type={showPassword ? 'text' : 'password'}
-          placeholder="••••••••"
+          placeholder="Your password"
           value={password}
           onChange={e => setPassword(e.target.value)}
           onKeyDown={onKeyDown}
@@ -101,7 +119,7 @@ export default function LoginPage() {
             <button
               type="button"
               className="auth-input-suffix"
-              onClick={() => setShowPassword(s => !s)}
+              onClick={() => setShowPassword(value => !value)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}>
               {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
             </button>
@@ -134,5 +152,21 @@ export default function LoginPage() {
         </span>
       </p>
     </AuthLayout>
+  )
+}
+
+function LoginFallback() {
+  return (
+    <AuthLayout>
+      <p className="auth-sub">Loading sign in...</p>
+    </AuthLayout>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginContent />
+    </Suspense>
   )
 }

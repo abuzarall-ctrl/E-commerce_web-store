@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
-import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle, FiShoppingBag } from 'react-icons/fi'
+import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle, FiShoppingBag, FiRotateCcw, FiAlertCircle } from 'react-icons/fi'
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
@@ -15,6 +15,7 @@ const STATUS_CONFIG = {
   shipped:    { label: 'Shipped',    icon: FiTruck,       bg: 'rgba(147,197,253,0.15)', color: '#93C5FD', border: 'rgba(147,197,253,0.3)' },
   delivered:  { label: 'Delivered',  icon: FiCheckCircle, bg: 'rgba(134,239,172,0.15)', color: '#86EFAC', border: 'rgba(134,239,172,0.3)' },
   cancelled:  { label: 'Cancelled',  icon: FiXCircle,     bg: 'rgba(226,75,74,0.1)',   color: '#E24B4A', border: 'rgba(226,75,74,0.25)' },
+  refunded:   { label: 'Refunded',   icon: FiXCircle,     bg: 'rgba(196,181,253,0.12)', color: '#C4B5FD', border: 'rgba(196,181,253,0.3)' },
 }
 
 function StatusBadge({ status }) {
@@ -45,6 +46,10 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
+  const [refundFor, setRefundFor] = useState(null)
+  const [refundReason, setRefundReason] = useState('')
+  const [refundBusy, setRefundBusy] = useState(false)
+  const [refundError, setRefundError] = useState('')
 
   useEffect(() => {
     const init = async () => {
@@ -61,6 +66,38 @@ export default function OrdersPage() {
     }
     init()
   }, [router])
+
+  const submitRefund = async (orderId) => {
+    if (!refundReason.trim()) { setRefundError('Please describe what went wrong with the order.'); return }
+    setRefundBusy(true)
+    setRefundError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/refund-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ orderId, reason: refundReason }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setRefundError(result.error || 'Could not submit your refund request.')
+        setRefundBusy(false)
+        return
+      }
+      setOrders(list => list.map(order => order.id === orderId
+        ? { ...order, refund_status: 'requested', refund_reason: refundReason }
+        : order))
+      setRefundFor(null)
+      setRefundReason('')
+      setRefundBusy(false)
+    } catch {
+      setRefundError('Network error. Please try again.')
+      setRefundBusy(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -146,6 +183,18 @@ export default function OrdersPage() {
                           #{order.id?.slice(0, 8)?.toUpperCase()}
                         </span>
                         <StatusBadge status={order.status} />
+                        {order.refund_status === 'requested' && (
+                          <span style={{
+                            fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px',
+                            color: '#FAEDCD', background: 'rgba(250,237,205,0.12)', border: '1px solid rgba(250,237,205,0.3)'
+                          }}>Refund requested</span>
+                        )}
+                        {order.refund_status === 'rejected' && (
+                          <span style={{
+                            fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px',
+                            color: '#E24B4A', background: 'rgba(226,75,74,0.1)', border: '1px solid rgba(226,75,74,0.25)'
+                          }}>Refund rejected</span>
+                        )}
                       </div>
                       <p style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '3px' }}>
                         {formatDate(order.created_at)} · {products.length} item{products.length !== 1 ? 's' : ''}
@@ -226,6 +275,109 @@ export default function OrdersPage() {
                           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
                         }}>Rs. {order.total?.toLocaleString()}</span>
                       </div>
+
+                      {/* Refund request */}
+                      {order.status === 'delivered' && (
+                        <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                          {order.refund_status === 'requested' ? (
+                            <div style={{
+                              display: 'flex', gap: '10px', alignItems: 'flex-start',
+                              padding: '12px 14px', borderRadius: '10px',
+                              background: 'rgba(250,237,205,0.08)', border: '1px solid rgba(250,237,205,0.25)'
+                            }}>
+                              <FiClock size={16} color="#FAEDCD" style={{ flexShrink: 0, marginTop: '1px' }} />
+                              <div>
+                                <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Refund request under review</p>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px', lineHeight: '1.6' }}>
+                                  Our team will contact you after checking the issue. You submitted: &quot;{order.refund_reason}&quot;
+                                </p>
+                              </div>
+                            </div>
+                          ) : order.refund_status === 'approved' ? (
+                            <div style={{
+                              display: 'flex', gap: '10px', alignItems: 'center',
+                              padding: '12px 14px', borderRadius: '10px',
+                              background: 'rgba(196,181,253,0.1)', border: '1px solid rgba(196,181,253,0.3)'
+                            }}>
+                              <FiCheckCircle size={16} color="#C4B5FD" />
+                              <p style={{ fontSize: '13px', color: 'var(--text-primary)' }}>Your refund has been approved.</p>
+                            </div>
+                          ) : (
+                            <>
+                              {order.refund_status === 'rejected' && (
+                                <div style={{
+                                  display: 'flex', gap: '10px', alignItems: 'flex-start',
+                                  padding: '12px 14px', borderRadius: '10px', marginBottom: '12px',
+                                  background: 'rgba(226,75,74,0.08)', border: '1px solid rgba(226,75,74,0.25)'
+                                }}>
+                                  <FiAlertCircle size={16} color="#E24B4A" style={{ flexShrink: 0, marginTop: '1px' }} />
+                                  <div>
+                                    <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Refund request rejected</p>
+                                    {order.refund_note && (
+                                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>{order.refund_note}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {refundFor === order.id ? (
+                                <div>
+                                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                    What went wrong?
+                                  </label>
+                                  <textarea
+                                    value={refundReason}
+                                    onChange={event => setRefundReason(event.target.value)}
+                                    placeholder="Tell us about the broken or damaged item..."
+                                    rows={3}
+                                    style={{
+                                      width: '100%', padding: '11px 14px', borderRadius: '8px',
+                                      background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                                      color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'inherit',
+                                      outline: 'none', resize: 'vertical'
+                                    }}
+                                  />
+                                  {refundError && (
+                                    <p style={{ fontSize: '12px', color: '#E24B4A', marginTop: '6px' }}>{refundError}</p>
+                                  )}
+                                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                                    <button
+                                      onClick={() => submitRefund(order.id)}
+                                      disabled={refundBusy}
+                                      style={{
+                                        padding: '10px 18px', borderRadius: '8px', border: 'none',
+                                        background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                                        fontSize: '13px', fontWeight: '700', cursor: refundBusy ? 'wait' : 'pointer'
+                                      }}>
+                                      {refundBusy ? 'Submitting...' : 'Submit Refund Request'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setRefundFor(null); setRefundReason(''); setRefundError('') }}
+                                      style={{
+                                        padding: '10px 18px', borderRadius: '8px',
+                                        background: 'transparent', color: 'var(--text-muted)',
+                                        border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer'
+                                      }}>
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => { setRefundFor(order.id); setRefundError(''); setRefundReason('') }}
+                                  style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '7px',
+                                    padding: '10px 16px', borderRadius: '8px',
+                                    background: 'transparent', color: 'var(--text-muted)',
+                                    border: '1px solid var(--border)', fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+                                  }}>
+                                  <FiRotateCcw size={14} /> Report a problem / Request refund
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </motion.div>

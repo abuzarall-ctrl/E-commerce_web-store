@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { readSiteSettings, saveSiteSettings } from '@/lib/siteSettingsServer'
+import { isAdminRole } from '@/lib/adminRoles'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -11,7 +12,7 @@ async function requireAdmin(request) {
   if (!token || !anonKey) return null
   const authClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: { user }, error } = await authClient.auth.getUser(token)
-  if (error || user?.app_metadata?.role !== 'admin') return null
+  if (error || !isAdminRole(user?.app_metadata?.role)) return null
   return user
 }
 

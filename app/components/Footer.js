@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { FiMapPin, FiPhone, FiMail, FiHeart, FiArrowRight, FiInstagram, FiFacebook, FiMessageCircle } from 'react-icons/fi'
+import { FiMapPin, FiPhone, FiMail, FiHeart, FiArrowRight, FiInstagram, FiFacebook, FiMessageCircle, FiRotateCcw } from 'react-icons/fi'
 import { CATEGORIES } from '@/lib/categories'
 import { useSiteSettings } from './SiteSettingsProvider'
 
@@ -131,6 +131,27 @@ export default function Footer() {
                   )}
                 </div>
               ))}
+              <div
+                onClick={() => router.push('/refund')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '10px',
+                  fontSize: '13px', color: 'var(--text-faint)', cursor: 'pointer',
+                  transition: 'color 0.2s', marginTop: '2px'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}>
+                <div style={{
+                  width: '30px', height: '30px',
+                  background: 'rgba(212, 163, 115, 0.1)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '6px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <FiRotateCcw size={13} color="var(--accent)" />
+                </div>
+                Refund request
+              </div>
             </div>
           </motion.div>
         </motion.div>

@@ -5,12 +5,12 @@ import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiCheckCircle, FiShoppingBag, FiArrowRight, FiHome,
-  FiPhone, FiTruck, FiCreditCard, FiAlertCircle, FiCopy, FiCheck
+  FiPhone, FiTruck, FiCreditCard, FiAlertCircle, FiCopy, FiCheck, FiUpload
 } from 'react-icons/fi'
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
-import { buildOrderPayload } from '@/lib/orderPayload'
+import { productStockQuantity } from '@/lib/categories'
 import { readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
 
 const CITIES = [
@@ -38,9 +38,9 @@ const PAYMENT_METHODS = [
     color: '#CC0000',
     successNote: {
       title: 'Send Payment via JazzCash',
-      number: '0300-0000000',
-      account: 'AbuzarStore',
-      instruction: 'Send the total amount to this JazzCash number, then WhatsApp us the screenshot to confirm your order.'
+      number: '+92 330 2816964',
+      account: 'Abuzar',
+      instruction: 'Send the total amount to this JazzCash number, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
     }
   },
   {
@@ -52,9 +52,9 @@ const PAYMENT_METHODS = [
     color: '#4AAD52',
     successNote: {
       title: 'Send Payment via Easypaisa',
-      number: '0300-0000000',
-      account: 'AbuzarStore',
-      instruction: 'Send the total amount to this Easypaisa number, then WhatsApp us the transaction ID to confirm your order.'
+      number: '+92 330 2816964',
+      account: 'Abuzar',
+      instruction: 'Send the total amount to this Easypaisa number, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
     }
   },
   {
@@ -67,9 +67,10 @@ const PAYMENT_METHODS = [
     successNote: {
       title: 'Bank Transfer Details',
       bank: 'Meezan Bank',
-      account: '0123456789012345',
-      iban: 'PK00MEZN0001234567890123',
-      instruction: 'Transfer the total amount to the account above, then WhatsApp us the receipt to confirm your order.'
+      accountName: 'Abuzar',
+      accountNumber: '01330115617457',
+      iban: '',
+      instruction: 'Transfer the total amount to the account above, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
     }
   }
 ]
@@ -119,7 +120,7 @@ function CopyButton({ text }) {
 }
 
 // ── Success payment panel ─────────────────────────────────────────────────────
-function PaymentInstructions({ method, total }) {
+function PaymentInstructions({ method, total, submitted = false }) {
   const note = method.successNote
   if (!note) return null
 
@@ -142,22 +143,24 @@ function PaymentInstructions({ method, total }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Account Name</span>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{note.account}</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{note.accountName}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Account No.</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'monospace' }}>{note.account}</span>
-              <CopyButton text={note.account} />
+              <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent)', fontFamily: 'monospace' }}>{note.accountNumber}</span>
+              <CopyButton text={note.accountNumber} />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>IBAN</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--accent)', fontFamily: 'monospace' }}>{note.iban}</span>
-              <CopyButton text={note.iban} />
+          {note.iban && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>IBAN</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--accent)', fontFamily: 'monospace' }}>{note.iban}</span>
+                <CopyButton text={note.iban} />
+              </div>
             </div>
-          </div>
+          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Amount</span>
             <span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--accent)' }}>Rs. {total.toLocaleString()}</span>
@@ -188,7 +191,9 @@ function PaymentInstructions({ method, total }) {
         background: 'rgba(212,163,115,0.08)', borderRadius: '8px',
         fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6'
       }}>
-        {note.instruction}
+        {submitted
+          ? 'Receipt received. Our team will verify your payment and confirm the order shortly.'
+          : note.instruction}
       </div>
     </motion.div>
   )
@@ -206,22 +211,27 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [receiptFile, setReceiptFile] = useState(null)
 
-  const [form, setForm] = useState({ name: '', phone: '', address: '', city: '', notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', city: '', notes: '' })
 
   useEffect(() => {
     const init = async () => {
       setItems(readCartFromStorage())
 
-const { data: { session } } = supabase
+      const { data: { session } } = supabase
         ? await supabase.auth.getSession()
         : { data: { session: null } }
-      if (!session) {
-        router.replace('/auth/login?redirect=/checkout')
-      } else {
+
+      if (session?.user) {
         setUser(session.user)
-        setAuthChecked(true)
+        setForm(previous => ({
+          ...previous,
+          name: previous.name || session.user.user_metadata?.full_name || '',
+          email: previous.email || session.user.email || '',
+        }))
       }
+      setAuthChecked(true)
     }
     init()
   }, [router])
@@ -262,9 +272,11 @@ const { data: { session } } = supabase
     if (!form.name.trim()) return 'Full name is required'
     if (!form.phone.trim()) return 'Phone number is required'
     if (phoneDigits.length !== 11) return 'Enter a valid 11-digit phone number (e.g. 03001234567)'
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return 'Enter a valid email address for your receipt and updates'
     if (!form.address.trim()) return 'Delivery address is required'
     if (!form.city) return 'Please select a city'
     if (items.length === 0) return 'Your cart is empty'
+    if (paymentMethod !== 'cod' && !receiptFile) return 'Please upload your online payment receipt'
     return null
   }
 
@@ -281,58 +293,73 @@ const { data: { session } } = supabase
       return
     }
 
-    // Verify stock status for all items before placing order
+    // Verify available stock for every item before placing the order
     const productIds = items.map(i => i.id)
-    const { data: freshProducts } = await supabase.from('products').select('id, stock_status, name').in('id', productIds)
-    const outOfStock = items.filter(item => {
+    const { data: freshProducts } = await supabase
+      .from('products')
+      .select('id, stock_status, stock_quantity, name')
+      .in('id', productIds)
+
+    const stockProblems = items.flatMap(item => {
       const fresh = freshProducts?.find(p => p.id === item.id)
-      return fresh && fresh.stock_status === 'out of stock'
+      if (!fresh) return []
+      const requested = Math.max(1, Number(item.qty) || 1)
+      const tracked = fresh.stock_quantity !== null && fresh.stock_quantity !== undefined
+      if (!tracked) {
+        return fresh.stock_status === 'out of stock' ? [`${item.name} is out of stock`] : []
+      }
+      const available = productStockQuantity(fresh)
+      if (available <= 0 || fresh.stock_status === 'out of stock') {
+        return [`${item.name} is out of stock`]
+      }
+      if (requested > available) {
+        return [`only ${available} left of ${item.name} (you asked for ${requested})`]
+      }
+      return []
     })
-    if (outOfStock.length > 0) {
-      setError(`The following items are now out of stock: ${outOfStock.map(i => i.name).join(', ')}. Please remove them from your cart.`)
+
+    if (stockProblems.length > 0) {
+      setError(`Stock changed while you were shopping: ${stockProblems.join('; ')}. Please update your cart.`)
       setPlacing(false)
       return
     }
 
-    const orderItems = items.map(i => ({
-      id: i.id, name: i.name, category: i.category,
-      price: i.price, discount: i.discount,
-      finalPrice: Math.round(discounted(i)), qty: i.qty, image_url: i.image_url
+    const formData = new FormData()
+    formData.append('items', JSON.stringify(items.map(item => ({ id: item.id, qty: item.qty }))))
+    formData.append('delivery', JSON.stringify({
+      name: form.name,
+      phone: form.phone,
+      email: form.email,
+      address: form.address,
+      city: form.city,
     }))
+    formData.append('notes', form.notes)
+    formData.append('paymentMethod', paymentMethod)
+    if (receiptFile) formData.append('receipt', receiptFile)
 
-    const selectedMethod = PAYMENT_METHODS.find(m => m.id === paymentMethod)
-    const products = buildOrderPayload(
-      orderItems,
-      { name: form.name, phone: form.phone, address: form.address, city: form.city },
-      { notes: form.notes, payment: selectedMethod?.name || paymentMethod }
-    )
-
-    const { data, error: dbErr } = await supabase.from('orders').insert({
-      user_id: user?.id || null,
-      products,
-      total: subtotal,
-      status: 'pending'
-    }).select('id').single()
-
-    if (dbErr) {
-      // Extract all possible error properties (Supabase errors have non-enumerable props)
-      console.error('Order insert error:', {
-        code: dbErr?.code,
-        message: dbErr?.message,
-        details: dbErr?.details,
-        hint: dbErr?.hint,
-        status: dbErr?.status,
-        json: (() => { try { return JSON.stringify(dbErr) } catch (_) { return '[unstringifiable]' } })()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+        body: formData,
       })
-      setError(dbErr?.message || 'Failed to place order. Please check console for details and try again.')
-      setPlacing(false)
-      return
-    }
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok || !result.order?.id) {
+        setError(result.error || 'Failed to place order. Please try again.')
+        setPlacing(false)
+        return
+      }
 
-    writeCartToStorage([])
-    setOrderId(data.id)
-    setSuccess(true)
-    setPlacing(false)
+      writeCartToStorage([])
+      setOrderId(result.order.id)
+      setReceiptFile(null)
+      setSuccess(true)
+      setPlacing(false)
+    } catch {
+      setError('Network error placing your order. Please try again.')
+      setPlacing(false)
+    }
   }
 
   const selectedPayment = PAYMENT_METHODS.find(m => m.id === paymentMethod)
@@ -387,6 +414,15 @@ const { data: { session } } = supabase
               </span>
             </motion.p>
 
+            {!user && (
+              <motion.p
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+                style={{ fontSize: '12px', color: 'var(--text-faint)', lineHeight: '1.6', marginBottom: '20px' }}>
+                Guest order placed. Save this Order ID with the email you used — you&apos;ll need both to
+                request help or a refund after delivery.
+              </motion.p>
+            )}
+
             {/* Payment instructions (non-COD methods) */}
             <PaymentInstructions method={selectedPayment} total={subtotal} />
 
@@ -411,19 +447,35 @@ const { data: { session } } = supabase
             <motion.div
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
               style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                onClick={() => router.push('/orders')}
-                style={{
-                  width: '100%', padding: '13px',
-                  background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
-                  border: 'none', borderRadius: '10px',
-                  fontSize: '14px', fontWeight: '700', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
-                }}>
-                <FiCheckCircle size={15} /> View My Orders
-              </motion.button>
+              {user ? (
+                <motion.button
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => router.push('/orders')}
+                  style={{
+                    width: '100%', padding: '13px',
+                    background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                    border: 'none', borderRadius: '10px',
+                    fontSize: '14px', fontWeight: '700', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
+                  }}>
+                  <FiCheckCircle size={15} /> View My Orders
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => router.push(`/refund?order=${encodeURIComponent(orderId || '')}`)}
+                  style={{
+                    width: '100%', padding: '13px',
+                    background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                    border: 'none', borderRadius: '10px',
+                    fontSize: '14px', fontWeight: '700', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
+                  }}>
+                  <FiAlertCircle size={15} /> Request Refund / Help
+                </motion.button>
+              )}
               <motion.button
                 whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
                 onClick={() => router.push('/shop')}
@@ -514,7 +566,7 @@ const { data: { session } } = supabase
               Checkout
             </h1>
             <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '32px' }}>
-              Fill in your delivery details below
+              No account needed — fill in your details and place your order.
             </p>
           </motion.div>
 
@@ -582,6 +634,21 @@ const { data: { session } } = supabase
                       </motion.p>
                     )}
                   </AnimatePresence>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label style={labelStyle}>Email Address *</label>
+                  <input
+                    type="email" placeholder="you@example.com" value={form.email}
+                    onChange={set('email')}
+                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
+                    style={inputStyle}
+                  />
+                  <p style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>
+                    Used for order updates, receipt verification and refund requests.
+                  </p>
                 </div>
 
                 {/* City */}
@@ -691,20 +758,37 @@ const { data: { session } } = supabase
                   })}
                 </div>
 
-                {/* Non-COD notice */}
+                {/* Online payment details + receipt */}
                 {paymentMethod !== 'cod' && (
                   <motion.div
                     initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-                    style={{
-                      marginTop: '12px', padding: '10px 12px',
-                      background: 'rgba(212,163,115,0.07)', border: '1px solid rgba(212,163,115,0.2)',
-                      borderRadius: '8px', display: 'flex', gap: '8px', alignItems: 'flex-start'
+                    style={{ marginTop: '16px' }}>
+            <PaymentInstructions method={selectedPayment} total={subtotal} submitted />
+
+                    <div style={{
+                      marginTop: '-8px', padding: '14px',
+                      background: 'var(--bg-surface2)', border: '1px solid var(--border)',
+                      borderRadius: '10px'
                     }}>
-                    <FiAlertCircle size={14} color="var(--accent)" style={{ flexShrink: 0, marginTop: '1px' }} />
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                      Payment instructions will be shown after you place the order.
-                      Your order will be processed once payment is confirmed.
-                    </p>
+                      <label style={labelStyle}>Transaction Receipt *</label>
+                      <label style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        padding: '18px 12px', border: '1.5px dashed var(--border)', borderRadius: '8px',
+                        cursor: 'pointer', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px'
+                      }}>
+                        <FiUpload size={16} color="var(--accent)" />
+                        {receiptFile ? receiptFile.name : 'Upload screenshot or PDF (max 5 MB)'}
+                        <input
+                          type="file"
+                          accept="image/*,application/pdf"
+                          onChange={e => setReceiptFile(e.target.files?.[0] || null)}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      <p style={{ fontSize: '11px', color: 'var(--text-faint)', lineHeight: '1.6', marginTop: '8px' }}>
+                        We verify every receipt manually. Your order is confirmed only after the payment is approved.
+                      </p>
+                    </div>
                   </motion.div>
                 )}
               </div>

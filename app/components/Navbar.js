@@ -6,6 +6,7 @@ import { clearCart } from '@/lib/cartStorage'
 import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
 import { clearWishlist } from '@/lib/wishlistStorage'
 import { supabase } from '@/lib/supabaseClient'
+import { isAdminRole } from '@/lib/adminRoles'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon, FiHeart } from 'react-icons/fi'
 import CartDrawer from './CartDrawer'
@@ -54,7 +55,7 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
-  const showAdminLink = user?.app_metadata?.role === 'admin'
+  const showAdminLink = isAdminRole(user?.app_metadata?.role)
 
   useEffect(() => {
     initCartStore()

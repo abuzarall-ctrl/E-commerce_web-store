@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { isAdminRole } from '@/lib/adminRoles'
 import { useRouter } from 'next/navigation'
 import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiArrowLeft, FiShield } from 'react-icons/fi'
 import AuthLayout from '@/app/components/auth/AuthLayout'
@@ -27,7 +28,7 @@ export default function AdminLoginPage() {
       setLoading(false)
       return
     }
-    if (data.user?.app_metadata?.role !== 'admin') {
+    if (!isAdminRole(data.user?.app_metadata?.role)) {
       await supabase.auth.signOut()
       setError('This account does not have admin access')
       setLoading(false)

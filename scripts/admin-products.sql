@@ -1,5 +1,5 @@
 -- Run this once in Supabase Dashboard > SQL Editor.
--- It allows users whose app_metadata role is admin to manage products directly.
+-- It allows users whose app_metadata role is admin or super_admin to manage products directly.
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on table public.products to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
@@ -12,8 +12,8 @@ create policy "Admins can manage products"
   on public.products
   for all
   to authenticated
-  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')
-  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') in ('admin', 'super_admin'))
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') in ('admin', 'super_admin'));
 
 drop policy if exists "Service role can manage products" on public.products;
 create policy "Service role can manage products"

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { CATEGORIES } from '@/lib/categories'
+import { CATEGORIES, productStockQuantity } from '@/lib/categories'
 import { motion } from 'framer-motion'
 import { FiArrowRight, FiCheck, FiHeart, FiRotateCcw, FiTruck } from 'react-icons/fi'
 import Navbar from './components/Navbar'
@@ -44,18 +44,51 @@ export default function Home() {
 
   useEffect(() => {
     if (!supabase) return
-    supabase.from('products').select('*').in('category', CATEGORIES).limit(24).then(({ data }) => {
-      const all = data || []
-      const picked = CATEGORIES.map(category => all.find(product => product.category === category)).filter(Boolean)
-      all.forEach(product => {
-        if (picked.length < 4 && !picked.includes(product)) picked.push(product)
-      })
-      setProducts(picked.slice(0, 4))
+    supabase.from('products').select('*').in('category', CATEGORIES).order('created_at', { ascending: false }).limit(200).then(({ data }) => {
+      setProducts(data || [])
       setLoading(false)
     })
   }, [])
 
   const shop = (category) => router.push(category ? `/shop?category=${encodeURIComponent(category)}` : '/shop')
+
+  const featured = (() => {
+    const picked = CATEGORIES.map(category => products.find(product => product.category === category)).filter(Boolean)
+    for (const product of products) {
+      if (picked.length >= 4) break
+      if (!picked.some(item => item.id === product.id)) picked.push(product)
+    }
+    return picked.slice(0, 4)
+  })()
+
+  const threshold = siteSettings.lowStockThreshold ?? 5
+  const used = new Set()
+  const take = (list, limit = 4) => {
+    const picked = []
+    for (const product of list) {
+      if (picked.length >= limit) break
+      if (used.has(product.id)) continue
+      used.add(product.id)
+      picked.push(product)
+    }
+    return picked
+  }
+
+  const lowStock = take(
+    products
+      .filter(product => {
+        const quantity = productStockQuantity(product)
+        return quantity > 0 && quantity <= threshold
+      })
+      .sort((a, b) => productStockQuantity(a) - productStockQuantity(b))
+  )
+  const discounted = take(
+    products
+      .filter(product => Number(product.discount) > 0)
+      .sort((a, b) => Number(b.discount) - Number(a.discount))
+  )
+  const fastSelling = take(products.filter(product => product.is_fast_selling))
+  const goodReviews = take(products.filter(product => product.is_good_reviews))
 
   return (
     <main className="fashion-home">
@@ -108,12 +141,68 @@ export default function Home() {
           <button className="text-button" onClick={() => shop()}>View all pieces <FiArrowRight /></button>
         </div>
         {loading ? <div className="featured-grid">{[0, 1, 2, 3].map(i => <ProductCardSkeleton key={i} index={i} />)}</div>
-          : products.length ? <div className="featured-grid">{products.map(product => <ProductCard product={product} key={product.id} />)}</div>
+          : featured.length ? <div className="featured-grid">{featured.map(product => <ProductCard product={product} key={product.id} />)}</div>
           : <div className="empty-products">
             <p>New crockery pieces are being prepared. Visit the shop to browse everything currently available.</p>
             <button className="text-button" onClick={() => shop()}>Browse the shop <FiArrowRight /></button>
           </div>}
       </section>
+
+      {lowStock.length > 0 && (
+        <section className="products-section content-width">
+          <div className="section-heading">
+            <div><p className="eyebrow">Running low</p><h2>Almost <em>gone.</em></h2></div>
+            <button className="text-button" onClick={() => shop()}>Shop before they sell out <FiArrowRight /></button>
+          </div>
+          <p className="intro-section__copy" style={{ marginBottom: '24px' }}>
+            Only a handful of these pieces are left in stock. Once they&apos;re gone, they may not return.
+          </p>
+          <div className="featured-grid">{lowStock.map(product => <ProductCard product={product} key={product.id} />)}</div>
+        </section>
+      )}
+
+      {discounted.length > 0 && (
+        <section className="products-section content-width">
+          <div className="section-heading">
+            <div><p className="eyebrow">Better prices</p><h2>On <em>sale.</em></h2></div>
+            <button className="text-button" onClick={() => shop()}>Shop all offers <FiArrowRight /></button>
+          </div>
+          <div className="featured-grid">{discounted.map(product => <ProductCard product={product} key={product.id} />)}</div>
+        </section>
+      )}
+
+      {fastSelling.length > 0 && (
+        <section className="products-section content-width">
+          <div className="section-heading">
+            <div><p className="eyebrow">Customer favourites</p><h2>Fast <em>selling.</em></h2></div>
+            <button className="text-button" onClick={() => shop()}>See what&apos;s popular <FiArrowRight /></button>
+          </div>
+          <div className="featured-grid">{fastSelling.map(product => <ProductCard product={product} key={product.id} />)}</div>
+        </section>
+      )}
+
+      {goodReviews.length > 0 && (
+        <section className="products-section content-width">
+          <div className="section-heading">
+            <div><p className="eyebrow">Loved by customers</p><h2>Great <em>reviews.</em></h2></div>
+            <button className="text-button" onClick={() => shop()}>Shop top-rated pieces <FiArrowRight /></button>
+          </div>
+          <div className="featured-grid">{goodReviews.map(product => <ProductCard product={product} key={product.id} />)}</div>
+        </section>
+      )}
+
+      {!loading && products.length > 0 && (
+        <section className="products-section content-width">
+          <div className="section-heading">
+            <div><p className="eyebrow">Everything we stock</p><h2>All <em>items.</em></h2></div>
+            <button className="text-button" onClick={() => shop()}>Browse the full shop <FiArrowRight /></button>
+          </div>
+          <div className="featured-grid">{products.slice(0, 8).map(product => <ProductCard product={product} key={product.id} />)}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px' }}>
+            <button className="button" onClick={() => shop()}>View all products <FiArrowRight /></button>
+          </div>
+        </section>
+      )}
 
       <section className="editorial-band">
         <div className="editorial-band__photo" />

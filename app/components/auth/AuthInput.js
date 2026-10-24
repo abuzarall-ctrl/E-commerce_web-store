@@ -13,6 +13,8 @@ export default function AuthInput({
   name,
   autoComplete,
   error,
+  inputMode,
+  maxLength,
 }) {
   return (
     <div>
@@ -40,6 +42,8 @@ export default function AuthInput({
           value={value}
           onChange={onChange}
           onKeyDown={onKeyDown}
+          inputMode={inputMode}
+          maxLength={maxLength}
         />
         {suffix}
       </div>

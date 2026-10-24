@@ -1,9 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 import { motion } from 'framer-motion'
 import { FiClock } from 'react-icons/fi'
 import ProductCard from './ProductCard'
-import { getRecentlyViewed } from '@/lib/recentlyViewed'
+import { getRecentlyViewed, subscribeRecentlyViewed } from '@/lib/recentlyViewed'
+
+const EMPTY_ITEMS = []
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -11,11 +13,11 @@ const fadeUp = {
 }
 
 export default function RecentlyViewed({ excludeId }) {
-  const [items, setItems] = useState([])
-
-  useEffect(() => {
-    setItems(getRecentlyViewed(excludeId))
-  }, [excludeId])
+  const items = useSyncExternalStore(
+    subscribeRecentlyViewed,
+    () => getRecentlyViewed(excludeId),
+    () => EMPTY_ITEMS
+  )
 
   if (items.length === 0) return null
 

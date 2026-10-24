@@ -28,6 +28,8 @@ const products = [
     price: 1490,
     discount: 10,
     stock_status: 'in stock',
+    is_fast_selling: true,
+    is_good_reviews: true,
     image_url: images['Plastic Crockery'],
   },
   {
@@ -46,6 +48,7 @@ const products = [
     price: 990,
     discount: 0,
     stock_status: 'low stock',
+    is_fast_selling: true,
     image_url: images['Plastic Crockery'],
   },
   {
@@ -73,6 +76,8 @@ const products = [
     price: 2890,
     discount: 15,
     stock_status: 'in stock',
+    is_fast_selling: true,
+    is_good_reviews: true,
     image_url: images.Glassware,
   },
   {
@@ -109,6 +114,7 @@ const products = [
     price: 5990,
     discount: 10,
     stock_status: 'in stock',
+    is_good_reviews: true,
     image_url: images.Melamine,
   },
   {
@@ -139,6 +145,16 @@ const products = [
     image_url: images.Melamine,
   },
 ]
+
+products.forEach(product => {
+  if (product.stock_quantity == null) {
+    product.stock_quantity = product.stock_status === 'out of stock'
+      ? 0
+      : product.stock_status === 'low stock'
+        ? 4
+        : 25
+  }
+})
 
 async function seed() {
   const { data: existing, error: readError } = await supabase.from('products').select('name')

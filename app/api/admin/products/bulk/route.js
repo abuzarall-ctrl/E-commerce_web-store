@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { CATEGORIES, STOCK_STATUSES } from '@/lib/categories'
+import { CATEGORIES, STOCK_STATUSES, resolveStockQuantity, stockStatusForQuantity } from '@/lib/categories'
+import { isAdminRole } from '@/lib/adminRoles'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -15,7 +16,7 @@ async function requireAdmin(request) {
   if (!token || !anonKey) return null
   const authClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: { user }, error } = await authClient.auth.getUser(token)
-  if (error || user?.app_metadata?.role !== 'admin') return null
+  if (error || !isAdminRole(user?.app_metadata?.role)) return null
   return user
 }
 
@@ -34,15 +35,22 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Maximum 100 products per import.' }, { status: 400 })
   }
 
-  const products = raw.map(p => ({
-    name: String(p.name || '').trim(),
-    description: String(p.description || '').trim(),
-    category: CATEGORIES.includes(p.category) ? p.category : CATEGORIES[0],
-    price: Number(p.price),
-    discount: Math.min(100, Math.max(0, Number(p.discount) || 0)),
-    stock_status: STOCK_STATUSES.includes(p.stock_status) ? p.stock_status : STOCK_STATUSES[0],
-    image_url: String(p.image_url || '').trim(),
-  }))
+  const products = raw.map(p => {
+    const fallbackStatus = STOCK_STATUSES.includes(p.stock_status) ? p.stock_status : STOCK_STATUSES[0]
+    const stockQuantity = resolveStockQuantity(p.stock_quantity, fallbackStatus)
+    return {
+      name: String(p.name || '').trim(),
+      description: String(p.description || '').trim(),
+      category: CATEGORIES.includes(p.category) ? p.category : CATEGORIES[0],
+      price: Number(p.price),
+      discount: Math.min(100, Math.max(0, Number(p.discount) || 0)),
+      stock_quantity: stockQuantity,
+      stock_status: stockStatusForQuantity(stockQuantity),
+      is_fast_selling: Boolean(p.is_fast_selling),
+      is_good_reviews: Boolean(p.is_good_reviews),
+      image_url: String(p.image_url || '').trim(),
+    }
+  })
 
   const invalid = products.find(p => !p.name || !Number.isFinite(p.price))
   if (invalid) {
@@ -51,7 +59,7 @@ export async function POST(request) {
 
   const { data, error } = await serviceClient().from('products').insert(products).select()
   if (error) {
-    return NextResponse.json({ error: `Bulk insert failed: ${error.message}` }, { status: 400 })
+    return NextResponse.json({ error: `Bulk insert failed: ${error.message}. Run scripts/admin-stock.sql in the Supabase SQL Editor if stock tracking is missing.` }, { status: 400 })
   }
 
   return NextResponse.json({ imported: data.length, products: data }, { status: 201 })
