@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js'
 import { getOrderDetails } from '@/lib/orderPayload'
 import { productStockQuantity, stockStatusForQuantity } from '@/lib/categories'
 import { isAdminRole } from '@/lib/adminRoles'
+import { sendOrderConfirmationEmail } from '@/lib/mailer'
+import { orderNumber } from '@/lib/orderSummary'
+
+export const runtime = 'nodejs'
+
+const PAYMENT_RECEIPT_BUCKET = 'payment-receipts'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -23,6 +29,28 @@ async function requireAdmin(request) {
 
 const STOCK_CONSUMING_STATUSES = ['confirmed', 'shipped', 'delivered']
 const VALID_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'refunded']
+const RECEIPT_MIME = {
+  pdf: 'application/pdf',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+}
+
+async function loadPaymentReceipt(client, order) {
+  if (!order?.payment_receipt_path) return null
+  const { data, error } = await client.storage
+    .from(PAYMENT_RECEIPT_BUCKET)
+    .download(order.payment_receipt_path)
+  if (error || !data) return null
+
+  const extension = String(order.payment_receipt_path).split('.').pop()?.toLowerCase() || 'file'
+  return {
+    filename: `payment-receipt-${orderNumber(order)}.${extension}`,
+    content: Buffer.from(await data.arrayBuffer()),
+    contentType: data.type || RECEIPT_MIME[extension] || 'application/octet-stream',
+  }
+}
 
 async function adjustOrderStock(client, order, direction) {
   const { items } = getOrderDetails(order)
@@ -144,6 +172,21 @@ export async function PATCH(request) {
     return NextResponse.json({ order: data })
   }
 
+  if (action === 'resend-email') {
+    if (!['confirmed', 'shipped', 'delivered'].includes(currentOrder.status)) {
+      return NextResponse.json({ error: 'Confirm the order before sending the receipt email.' }, { status: 400 })
+    }
+    try {
+      const paymentReceipt = await loadPaymentReceipt(client, currentOrder)
+      const email = await sendOrderConfirmationEmail(currentOrder, { paymentReceipt })
+      return NextResponse.json({ order: currentOrder, email })
+    } catch (emailError) {
+      return NextResponse.json({
+        error: emailError.message || 'Could not send the confirmation email.'
+      }, { status: 400 })
+    }
+  }
+
   const extraUpdate = {}
   if (action === 'approve-refund') {
     if (currentOrder.status !== 'delivered') {
@@ -196,5 +239,20 @@ export async function PATCH(request) {
     if (appliedDirection) await adjustOrderStock(client, currentOrder, -appliedDirection)
     return NextResponse.json({ error: `Order update failed: ${error.message}` }, { status: 400 })
   }
-  return NextResponse.json({ order: data, stockAdjusted: stockResult.adjusted || 0 })
+
+  let email = null
+  if (status === 'confirmed' && currentOrder.status !== 'confirmed') {
+    try {
+      const paymentReceipt = await loadPaymentReceipt(client, currentOrder)
+      email = await sendOrderConfirmationEmail(data, { paymentReceipt })
+    } catch (emailError) {
+      email = { sent: false, error: emailError.message || 'Could not send the confirmation email.' }
+    }
+  }
+
+  return NextResponse.json({
+    order: data,
+    stockAdjusted: stockResult.adjusted || 0,
+    ...(email ? { email } : {}),
+  })
 }

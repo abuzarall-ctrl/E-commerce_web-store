@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
-import { FiPackage, FiClock, FiCheckCircle, FiTruck, FiXCircle, FiShoppingBag, FiRotateCcw, FiAlertCircle } from 'react-icons/fi'
+import { FiPackage, FiClock, FiCheckCircle, FiCheck, FiTruck, FiXCircle, FiShoppingBag, FiRotateCcw, FiAlertCircle, FiDownload } from 'react-icons/fi'
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import { getOrderDetails } from '@/lib/orderPayload'
+import { appendCartItem } from '@/lib/cartStorage'
 
 const STATUS_CONFIG = {
   pending:    { label: 'Pending',    icon: FiClock,       bg: 'rgba(250,237,205,0.15)', color: '#FAEDCD', border: 'rgba(250,237,205,0.3)' },
@@ -32,6 +33,56 @@ function StatusBadge({ status }) {
   )
 }
 
+const ORDER_FLOW = [
+  { key: 'pending', label: 'Placed' },
+  { key: 'confirmed', label: 'Confirmed' },
+  { key: 'shipped', label: 'Shipped' },
+  { key: 'delivered', label: 'Delivered' },
+]
+
+function OrderTimeline({ status }) {
+  const activeIndex = ORDER_FLOW.findIndex(step => step.key === status)
+  if (activeIndex < 0) return null
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '20px' }}>
+      {ORDER_FLOW.map((step, index) => {
+        const done = index <= activeIndex
+        const lineDone = index < activeIndex
+        return (
+          <div key={step.key} style={{ flex: index < ORDER_FLOW.length - 1 ? 1 : '0 0 auto', display: 'flex', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', minWidth: '58px' }}>
+              <div style={{
+                width: '24px', height: '24px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: done ? 'var(--accent)' : 'var(--bg-surface)',
+                border: `1px solid ${done ? 'var(--accent)' : 'var(--border)'}`,
+                color: done ? 'var(--bg-primary)' : 'var(--text-faint)',
+                fontSize: '10px', fontWeight: '800'
+              }}>
+                {done ? <FiCheck size={12} /> : index + 1}
+              </div>
+              <span style={{
+                fontSize: '10px', fontWeight: done ? '700' : '500',
+                color: done ? 'var(--text-muted)' : 'var(--text-faint)',
+                textAlign: 'center', whiteSpace: 'nowrap'
+              }}>
+                {step.label}
+              </span>
+            </div>
+            {index < ORDER_FLOW.length - 1 && (
+              <div style={{
+                flex: 1, height: '2px', marginTop: '11px', marginLeft: '4px', marginRight: '4px',
+                background: lineDone ? 'var(--accent)' : 'var(--border)'
+              }} />
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString('en-PK', { day: 'numeric', month: 'short', year: 'numeric' })
 }
@@ -50,6 +101,7 @@ export default function OrdersPage() {
   const [refundReason, setRefundReason] = useState('')
   const [refundBusy, setRefundBusy] = useState(false)
   const [refundError, setRefundError] = useState('')
+  const [receiptBusy, setReceiptBusy] = useState(null)
 
   useEffect(() => {
     const init = async () => {
@@ -97,6 +149,47 @@ export default function OrdersPage() {
       setRefundError('Network error. Please try again.')
       setRefundBusy(false)
     }
+  }
+
+  const downloadReceipt = async (order) => {
+    if (receiptBusy) return
+    setReceiptBusy(order.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { router.replace('/auth/login?redirect=/orders'); return }
+      const response = await fetch(`/api/orders/receipt?id=${encodeURIComponent(order.id)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result.error || 'Could not download this receipt.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `receipt-${order.id.slice(0, 8).toUpperCase()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      window.dispatchEvent(new CustomEvent('appToast', {
+        detail: { message: err.message || 'Could not download this receipt.' }
+      }))
+    } finally {
+      setReceiptBusy(null)
+    }
+  }
+
+  const buyAgain = (order) => {
+    const { items } = getOrderDetails(order)
+    if (!items.length) return
+    for (const item of items) appendCartItem(item, Number(item.qty) || 1)
+    window.dispatchEvent(new CustomEvent('openCart'))
+    window.dispatchEvent(new CustomEvent('appToast', {
+      detail: { message: `${items.length} item${items.length === 1 ? '' : 's'} from order #${order.id.slice(0, 8).toUpperCase()} added to cart` }
+    }))
   }
 
   if (loading) {
@@ -215,6 +308,8 @@ export default function OrdersPage() {
                   {isOpen && (
                     <div style={{ borderTop: '1px solid var(--border)', padding: '20px 24px', background: 'var(--bg-surface2)' }}>
 
+                      <OrderTimeline status={order.status} />
+
                       {/* Delivery info */}
                       {delivery.name && (
                         <div style={{
@@ -274,6 +369,35 @@ export default function OrdersPage() {
                           background: 'var(--gradient-accent)',
                           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'
                         }}>Rs. {order.total?.toLocaleString()}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '16px' }}>
+                        <button
+                          onClick={() => downloadReceipt(order)}
+                          disabled={receiptBusy === order.id}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '7px',
+                            padding: '10px 16px', borderRadius: '8px',
+                            background: 'var(--bg-surface)', color: 'var(--text-muted)',
+                            border: '1px solid var(--border)', fontSize: '13px',
+                            fontWeight: '600', cursor: receiptBusy === order.id ? 'wait' : 'pointer'
+                          }}>
+                          <FiDownload size={14} color="var(--accent)" />
+                          {receiptBusy === order.id ? 'Preparing receipt...' : 'Download receipt (PDF)'}
+                        </button>
+                        {products.length > 0 && (
+                          <button
+                            onClick={() => buyAgain(order)}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: '7px',
+                              padding: '10px 16px', borderRadius: '8px',
+                              background: 'var(--bg-surface)', color: 'var(--text-muted)',
+                              border: '1px solid var(--border)', fontSize: '13px',
+                              fontWeight: '600', cursor: 'pointer'
+                            }}>
+                            <FiShoppingBag size={14} color="var(--accent)" /> Buy again
+                          </button>
+                        )}
                       </div>
 
                       {/* Refund request */}

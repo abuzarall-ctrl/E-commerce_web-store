@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildOrderPayload } from '@/lib/orderPayload'
 import { productStockQuantity } from '@/lib/categories'
+import { isAdminRole } from '@/lib/adminRoles'
 
 export const runtime = 'nodejs'
 
@@ -160,6 +161,9 @@ export async function POST(request) {
 
   const total = items.reduce((sum, item) => sum + item.finalPrice * item.qty, 0)
   const user = await optionalUser(request)
+  if (user && isAdminRole(user.app_metadata?.role)) {
+    return NextResponse.json({ error: 'Admin accounts cannot place orders. Please use a customer account.' }, { status: 403 })
+  }
 
   let receiptPath = null
   if (isOnlinePayment && hasReceipt) {

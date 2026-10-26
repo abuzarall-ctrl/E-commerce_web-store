@@ -9,7 +9,9 @@ import { supabase } from '@/lib/supabaseClient'
 import { isAdminRole } from '@/lib/adminRoles'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiShoppingCart, FiMenu, FiX, FiPackage, FiLogOut, FiLogIn, FiSettings, FiSun, FiMoon, FiHeart } from 'react-icons/fi'
-import CartDrawer from './CartDrawer'
+import dynamic from 'next/dynamic'
+
+const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false })
 
 const linkStyle = {
   color: 'var(--text-muted)',
@@ -53,6 +55,7 @@ export default function Navbar() {
   const emptyWishlistRef = useRef([])
   const wishlistCount = useSyncExternalStore(subscribeWishlist, getWishlistItems, () => emptyWishlistRef.current).length
   const [cartOpen, setCartOpen] = useState(false)
+  const [cartLoaded, setCartLoaded] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const theme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerThemeSnapshot)
   const showAdminLink = isAdminRole(user?.app_metadata?.role)
@@ -60,20 +63,29 @@ export default function Navbar() {
   useEffect(() => {
     initCartStore()
     initWishlistStore()
-    if (!supabase) return
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-    })
+    const openCart = () => {
+      setCartLoaded(true)
+      setCartOpen(true)
+    }
+    window.addEventListener('openCart', openCart)
 
-    // Listen for sign-in/sign-out (catches Google OAuth redirect)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+    let subscription = null
+    if (supabase) {
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setUser(session?.user ?? null)
+      })
+
+      // Listen for sign-in/sign-out (catches Google OAuth redirect)
+      subscription = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null)
+      }).data.subscription
+    }
 
     return () => {
-      subscription.unsubscribe()
+      window.removeEventListener('openCart', openCart)
+      subscription?.unsubscribe()
     }
   }, [])
 
@@ -189,7 +201,17 @@ export default function Navbar() {
           <motion.div
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
-            onClick={() => setCartOpen(true)}
+            onMouseEnter={e => {
+              setCartLoaded(true)
+              e.currentTarget.style.background = 'var(--gradient-accent)'
+              e.currentTarget.style.color = 'var(--bg-primary)'
+              e.currentTarget.style.borderColor = 'transparent'
+            }}
+            onFocus={() => setCartLoaded(true)}
+            onClick={() => {
+              setCartLoaded(true)
+              setCartOpen(true)
+            }}
             style={{
               background: 'rgba(212, 163, 115, 0.12)',
               backdropFilter: 'blur(10px)',
@@ -205,11 +227,6 @@ export default function Navbar() {
               alignItems: 'center',
               gap: '8px',
               transition: 'background 0.2s, border-color 0.2s, color 0.2s'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'var(--gradient-accent)'
-              e.currentTarget.style.color = 'var(--bg-primary)'
-              e.currentTarget.style.borderColor = 'transparent'
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'rgba(212, 163, 115, 0.12)'
@@ -353,7 +370,7 @@ export default function Navbar() {
         }
       `}</style>
 
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
+      {cartLoaded && <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />}
     </>
   )
 }

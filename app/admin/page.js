@@ -7,7 +7,7 @@ import {
   FiDownload, FiSearch, FiSave, FiExternalLink, FiGrid, FiBox,
   FiShoppingBag, FiSliders, FiMenu, FiX, FiLogOut, FiPlus, FiUpload,
   FiRefreshCw, FiSun, FiMoon, FiTrendingUp, FiAlertTriangle, FiPackage, FiCheckCircle,
-  FiUsers, FiUserPlus, FiTrash2, FiShield
+  FiUsers, FiUserPlus, FiTrash2, FiShield, FiTag, FiMail
 } from 'react-icons/fi'
 import Image from 'next/image'
 import {
@@ -44,6 +44,7 @@ const ORDER_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancell
 const NAV_ITEMS = [
   { id: 'overview', label: 'Dashboard', icon: FiGrid },
   { id: 'products', label: 'Products', icon: FiBox },
+  { id: 'categories', label: 'Categories', icon: FiTag },
   { id: 'orders', label: 'Orders', icon: FiShoppingBag },
   { id: 'admins', label: 'Admins', icon: FiUsers, superOnly: true },
   { id: 'settings', label: 'Site Info', icon: FiSliders },
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
 const TAB_COPY = {
   overview: { title: 'Dashboard', subtitle: 'Stock health, orders and revenue at a glance' },
   products: { title: 'Products', subtitle: 'Manage catalogue, pricing and inventory' },
+  categories: { title: 'Categories', subtitle: 'Create and organise storefront collections' },
   orders: { title: 'Orders', subtitle: 'Confirm, fulfil and refund customer orders' },
   admins: { title: 'Admins', subtitle: 'Create and manage store admin accounts' },
   settings: { title: 'Site Info', subtitle: 'Contact details and storefront messages' },
@@ -161,11 +163,13 @@ export default function AdminPanel() {
   const [refreshing, setRefreshing] = useState(false)
   const [orders, setOrders] = useState([])
   const [ordersError, setOrdersError] = useState('')
+  const [orderReceiptBusy, setOrderReceiptBusy] = useState(null)
   const [siteForm, setSiteForm] = useState(DEFAULT_SITE_SETTINGS)
   const [siteLoading, setSiteLoading] = useState(false)
   const [siteSaving, setSiteSaving] = useState(false)
   const [siteMessage, setSiteMessage] = useState('')
   const [siteError, setSiteError] = useState('')
+  const [categoryInput, setCategoryInput] = useState('')
   const [currentRole, setCurrentRole] = useState('')
   const [admins, setAdmins] = useState([])
   const [adminsLoading, setAdminsLoading] = useState(false)
@@ -257,7 +261,7 @@ export default function AdminPanel() {
       if (!isAdminRole(role)) { router.push('/'); return }
       setCurrentRole(role)
       setAuthorized(true)
-      await Promise.all([fetchProducts(), fetchOrders()])
+      await Promise.all([fetchProducts(), fetchOrders(), fetchSiteSettings()])
       setLoading(false)
     }
     init()
@@ -280,7 +284,7 @@ export default function AdminPanel() {
     setSidebarOpen(false)
     if (tabId === 'orders') fetchOrders()
     if (tabId === 'admins') fetchAdmins()
-    if (tabId === 'settings') fetchSiteSettings()
+    if (tabId === 'settings' || tabId === 'categories') fetchSiteSettings()
   }
 
   const refreshAll = async () => {
@@ -294,6 +298,38 @@ export default function AdminPanel() {
     setSiteForm(previous => ({ ...previous, [key]: value }))
     setSiteMessage('')
     setSiteError('')
+  }
+
+  function addCategory() {
+    const name = categoryInput.trim().slice(0, 40)
+    if (!name) return
+    if (name.toLowerCase() === 'all') {
+      setSiteError('"All" is reserved for the shop filter. Choose another name.')
+      return
+    }
+    if (siteForm.categories.some(category => category.toLowerCase() === name.toLowerCase())) {
+      setSiteError(`"${name}" already exists.`)
+      return
+    }
+    updateSiteField('categories', [...siteForm.categories, name])
+    setCategoryInput('')
+    setSiteMessage('Category added. Click "Save categories" to publish it.')
+  }
+
+  function removeCategory(name) {
+    if (siteForm.categories.length <= 1) {
+      setSiteError('At least one category is required.')
+      return
+    }
+    const used = products.filter(product => product.category === name).length
+    if (used > 0 && !confirm(`${used} product(s) use "${name}". They will keep this category, but it will no longer appear in storefront filters. Remove it?`)) {
+      return
+    }
+    updateSiteField('categories', siteForm.categories.filter(category => category !== name))
+    if (form.category === name) {
+      setForm(previous => ({ ...previous, category: siteForm.categories.find(category => category !== name) || '' }))
+    }
+    setSiteMessage('Category removed. Click "Save categories" to publish the change.')
   }
 
   async function handleSaveSiteSettings() {
@@ -314,7 +350,7 @@ export default function AdminPanel() {
       }
       const saved = normalizeSiteSettings(result.settings)
       setSiteForm(saved)
-      setSiteMessage('Saved. Your landing page and footer are updated.')
+      setSiteMessage('Saved. Your storefront has been updated.')
       window.dispatchEvent(new CustomEvent('site-settings-updated', { detail: saved }))
     } catch {
       setSiteError('Network error saving site info.')
@@ -399,7 +435,13 @@ export default function AdminPanel() {
       await fetchProducts()
 
       const adjusted = Number(result.stockAdjusted) || 0
-      if (status === 'confirmed' && adjusted) toast('Order confirmed · stock deducted')
+      const email = result.email
+      if (status === 'confirmed' && email) {
+        const stockNote = adjusted ? ' · stock deducted' : ''
+        if (email.sent) toast(`Order confirmed${stockNote} · receipt emailed to ${email.to}${email.attachments ? ` (${email.attachments} files)` : ''}`)
+        else if (email.error) toast(`Order confirmed${stockNote} · email failed: ${email.error}`)
+        else toast(`Order confirmed${stockNote} · ${email.reason || 'email not sent'}`)
+      } else if (status === 'confirmed' && adjusted) toast('Order confirmed · stock deducted')
       else if (status === 'refunded' && adjusted) toast('Refund processed · stock restored')
       else if (status === 'cancelled' && adjusted) toast('Order cancelled · stock restored')
       else if (previousOrder?.status !== status) toast(`Order marked ${status}`)
@@ -438,14 +480,46 @@ export default function AdminPanel() {
         toast('Payment receipt rejected')
       } else if (action === 'reject-refund') {
         toast('Refund request rejected')
+      } else if (action === 'resend-email') {
+        const email = result.email
+        if (email?.sent) toast(`Receipt emailed to ${email.to}${email.attachments ? ` with ${email.attachments} attachment(s)` : ''}`)
+        else toast(email?.reason || email?.error || 'Email not sent')
       }
     } catch {
       setOrdersError('Network error updating order.')
     }
   }
 
+  async function downloadOrderReceipt(order) {
+    if (orderReceiptBusy) return
+    setOrderReceiptBusy(order.id)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch(`/api/orders/receipt?id=${encodeURIComponent(order.id)}`, {
+        headers: { Authorization: `Bearer ${session?.access_token || ''}` },
+      })
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result.error || 'Could not download this receipt.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `receipt-${order.id.slice(0, 8).toUpperCase()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setOrdersError(err.message || 'Could not download this receipt.')
+    } finally {
+      setOrderReceiptBusy(null)
+    }
+  }
+
   const resetForm = () => {
-    setForm({ ...EMPTY_FORM })
+    setForm({ ...EMPTY_FORM, category: siteForm.categories[0] || CATEGORIES[0] })
     setEditProduct(null)
     setShowForm(false)
     setSaveError('')
@@ -553,7 +627,7 @@ export default function AdminPanel() {
     setBulkSuccess('')
     let parsed
     if (bulkMode === 'csv') {
-      const result = parseProductSheet(bulkText)
+      const result = parseProductSheet(bulkText, siteForm.categories)
       if (result.errors.length > 0) {
         setBulkError(result.errors.slice(0, 4).join(' '))
         return
@@ -617,9 +691,13 @@ export default function AdminPanel() {
   const labelStyle = { fontSize: '12px', color: 'var(--text-faint)', marginBottom: '6px', display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }
 
   const csvPreview = useMemo(
-    () => bulkMode === 'csv' && bulkText.trim() ? parseProductSheet(bulkText) : null,
-    [bulkMode, bulkText]
+    () => bulkMode === 'csv' && bulkText.trim() ? parseProductSheet(bulkText, siteForm.categories) : null,
+    [bulkMode, bulkText, siteForm.categories]
   )
+
+  const categoryOptions = form.category && !siteForm.categories.includes(form.category)
+    ? [form.category, ...siteForm.categories]
+    : siteForm.categories
 
   const filteredProducts = useMemo(() => {
     const query = productSearch.trim().toLowerCase()
@@ -759,7 +837,9 @@ export default function AdminPanel() {
               ? products.length
               : item.id === 'orders'
                 ? stats.pendingOrders
-                : null
+                : item.id === 'categories'
+                  ? siteForm.categories.length
+                  : null
             return (
               <motion.button
                 key={item.id}
@@ -1081,7 +1161,7 @@ export default function AdminPanel() {
                           <div>
                             <label style={labelStyle}>Category</label>
                             <select style={inputStyle} value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                              {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                              {categoryOptions.map(c => <option key={c}>{c}</option>)}
                             </select>
                           </div>
                           <div>
@@ -1434,6 +1514,21 @@ export default function AdminPanel() {
                                 <option key={s} value={s}>{s}</option>
                               ))}
                             </select>
+                            {['confirmed', 'shipped', 'delivered'].includes(order.status) && (
+                              <button
+                                type="button"
+                                onClick={() => handleOrderAction(order.id, 'resend-email')}
+                                style={adminActionStyle('#2F7F75')}>
+                                <FiMail size={12} /> Resend receipt email
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => downloadOrderReceipt(order)}
+                              disabled={orderReceiptBusy === order.id}
+                              style={adminActionStyle('#5B6B66')}>
+                              <FiDownload size={12} /> {orderReceiptBusy === order.id ? 'Preparing...' : 'Download receipt'}
+                            </button>
                             <span style={{ fontSize: '11px', color: 'var(--text-faint)', marginLeft: 'auto' }}>{stockNote}</span>
                           </div>
 
@@ -1583,6 +1678,142 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === 'categories' && (
+              <motion.div key="categories" variants={fadeUp} initial="hidden" animate="visible" exit="exit" style={{
+                background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                borderRadius: '12px', padding: '24px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap', marginBottom: '22px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '6px' }}>
+                      Product categories
+                    </h2>
+                    <p style={{ fontSize: '13px', color: 'var(--text-faint)', maxWidth: '620px', lineHeight: '1.6' }}>
+                      Categories power the product form, shop filters, home collections and footer links.
+                      Add a new collection such as Metal, then use it on any product.
+                    </p>
+                  </div>
+                  <a href="/shop" target="_blank" rel="noreferrer" className="admin-icon-btn" style={{ textDecoration: 'none' }}>
+                    <FiExternalLink size={14} /> View shop
+                  </a>
+                </div>
+
+                {siteError && (
+                  <p role="alert" style={{ marginBottom: '16px', padding: '10px 12px', color: '#ffaaa2', background: 'rgba(226,75,74,.13)', border: '1px solid rgba(226,75,74,.45)', borderRadius: '7px', fontSize: '13px' }}>{siteError}</p>
+                )}
+                {siteMessage && (
+                  <p role="status" style={{ marginBottom: '16px', padding: '10px 12px', color: '#2F7F75', background: 'rgba(47,127,117,.1)', border: '1px solid rgba(47,127,117,.35)', borderRadius: '7px', fontSize: '13px' }}>{siteMessage}</p>
+                )}
+
+                {siteLoading ? (
+                  <p style={{ padding: '30px 12px', textAlign: 'center', color: 'var(--text-faint)', fontSize: '13px' }}>Loading categories...</p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                    {siteForm.categories.map(category => {
+                      const used = products.filter(product => product.category === category).length
+                      return (
+                        <div key={category} style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '13px 14px', borderRadius: '10px',
+                          background: 'var(--bg-primary)', border: '1px solid var(--border)'
+                        }}>
+                          <span style={{
+                            width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0,
+                            background: 'rgba(212,163,115,.12)', color: 'var(--accent)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            <FiTag size={15} />
+                          </span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{category}</p>
+                            <p style={{ fontSize: '11px', color: 'var(--text-faint)' }}>{used} product{used === 1 ? '' : 's'}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeCategory(category)}
+                            disabled={siteForm.categories.length <= 1}
+                            aria-label={`Remove ${category}`}
+                            title={siteForm.categories.length <= 1 ? 'At least one category is required' : `Remove ${category}`}
+                            style={{
+                              background: 'transparent', border: '1px solid var(--border)', borderRadius: '7px',
+                              color: '#E24B4A', width: '28px', height: '28px', flexShrink: 0,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              cursor: siteForm.categories.length <= 1 ? 'not-allowed' : 'pointer',
+                              opacity: siteForm.categories.length <= 1 ? 0.35 : 1
+                            }}>
+                            <FiTrash2 size={12} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'flex-end', paddingTop: '18px', borderTop: '1px solid var(--border)' }}>
+                  <label htmlFor="new-category" style={{ flex: '1 1 240px' }}>
+                    <span style={labelStyle}>New category name</span>
+                    <input
+                      id="new-category"
+                      value={categoryInput}
+                      placeholder="e.g. Metal"
+                      maxLength={40}
+                      onChange={event => { setCategoryInput(event.target.value); setSiteError(''); setSiteMessage('') }}
+                      onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addCategory() } }}
+                      style={inputStyle}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addCategory}
+                    disabled={!categoryInput.trim()}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '7px',
+                      background: 'var(--bg-surface2)', color: 'var(--text-primary)',
+                      padding: '11px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: '700',
+                      border: '1px solid var(--border)',
+                      cursor: categoryInput.trim() ? 'pointer' : 'not-allowed',
+                      opacity: categoryInput.trim() ? 1 : 0.5
+                    }}>
+                    <FiPlus size={14} /> Add category
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <motion.button
+                    whileHover={{ scale: siteSaving || siteLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: siteSaving || siteLoading ? 1 : 0.97 }}
+                    type="button"
+                    onClick={handleSaveSiteSettings}
+                    disabled={siteSaving || siteLoading}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '8px',
+                      background: 'var(--accent)', color: 'var(--bg-primary)',
+                      padding: '12px 24px', borderRadius: '8px', fontSize: '14px',
+                      fontWeight: '700', border: 'none', cursor: siteSaving || siteLoading ? 'wait' : 'pointer',
+                      opacity: siteSaving || siteLoading ? 0.7 : 1
+                    }}>
+                    <FiSave size={15} /> {siteSaving ? 'Saving...' : 'Save categories'}
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: siteLoading ? 1 : 1.02 }}
+                    whileTap={{ scale: siteLoading ? 1 : 0.97 }}
+                    type="button"
+                    onClick={fetchSiteSettings}
+                    disabled={siteLoading}
+                    style={{
+                      background: 'transparent', color: 'var(--text-muted)',
+                      padding: '12px 20px', borderRadius: '8px', fontSize: '14px',
+                      border: '1px solid var(--border)', cursor: siteLoading ? 'wait' : 'pointer'
+                    }}>
+                    {siteLoading ? 'Loading...' : 'Reload saved'}
+                  </motion.button>
+                  <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
+                    Changes are published after saving.
+                  </span>
+                </div>
               </motion.div>
             )}
 

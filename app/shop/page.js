@@ -7,9 +7,10 @@ import { FiSearch, FiX, FiFilter } from 'react-icons/fi'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ProductCard from '../components/ProductCard'
-import { CATEGORIES, STOCK_STATUSES } from '@/lib/categories'
+import { STOCK_STATUSES } from '@/lib/categories'
+import { useSiteSettings } from '../components/SiteSettingsProvider'
 
-const categories = ['All', ...CATEGORIES]
+const PAGE_SIZE = 24
 
 const containerVariants = {
   hidden: {},
@@ -34,6 +35,8 @@ function ShopFallback() {
 
 function ShopContent() {
   const searchParams = useSearchParams()
+  const siteSettings = useSiteSettings()
+  const categories = ['All', ...siteSettings.categories]
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -41,11 +44,13 @@ function ShopContent() {
   const [stockFilter, setStockFilter] = useState('All')
   const [sort, setSort] = useState('featured')
   const [searchFocused, setSearchFocused] = useState(false)
+  const [pageState, setPageState] = useState({ key: 'featured|All|All|', count: PAGE_SIZE })
+  const filterKey = `${sort}|${category}|${stockFilter}|${search}`
 
 useEffect(() => {
     const fetchProducts = async () => {
       if (!supabase) { setProducts([]); setLoading(false); return }
-      const { data } = await supabase.from('products').select('*').in('category', CATEGORIES)
+      const { data } = await supabase.from('products').select('*')
       if (data) setProducts(data)
       setLoading(false)
     }
@@ -69,6 +74,13 @@ useEffect(() => {
     if (sort === 'newest') result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
     return result
   }, [search, category, stockFilter, sort, products])
+
+  const visibleCount = pageState.key === filterKey ? pageState.count : PAGE_SIZE
+  const visible = filtered.slice(0, visibleCount)
+
+  const showMore = () => {
+    setPageState({ key: filterKey, count: visibleCount + PAGE_SIZE })
+  }
 
   return (
     <>
@@ -132,7 +144,7 @@ useEffect(() => {
             }} />
             <input
               type="text"
-              placeholder="Search plastic crockery, glassware, melamine..."
+              placeholder={`Search ${siteSettings.categories.join(', ')}...`}
               value={search}
               onChange={e => setSearch(e.target.value)}
               onFocus={() => setSearchFocused(true)}
@@ -283,13 +295,32 @@ useEffect(() => {
                   gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
                   gap: '20px'
                 }}>
-                {filtered.map(product => (
+                {visible.map(product => (
                   <motion.div key={product.id} variants={cardVariants}>
                     <ProductCard product={product} />
                   </motion.div>
                 ))}
               </motion.div>
             </AnimatePresence>
+          )}
+
+          {!loading && filtered.length > visibleCount && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
+              <button
+                type="button"
+                onClick={showMore}
+                style={{
+                  padding: '11px 28px', borderRadius: '24px',
+                  background: 'var(--bg-surface)', color: 'var(--text-primary)',
+                  border: '1px solid var(--border)', fontSize: '13px', fontWeight: '700',
+                  cursor: 'pointer'
+                }}>
+                Load more products
+              </button>
+              <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>
+                Showing {visibleCount} of {filtered.length}
+              </span>
+            </div>
           )}
         </div>
 

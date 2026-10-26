@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { CATEGORIES, productStockQuantity } from '@/lib/categories'
+import { CATEGORY_IMAGES, productStockQuantity } from '@/lib/categories'
 import { motion } from 'framer-motion'
 import { FiArrowRight, FiCheck, FiHeart, FiRotateCcw, FiTruck } from 'react-icons/fi'
 import Navbar from './components/Navbar'
@@ -15,26 +15,7 @@ import Image from 'next/image'
 const ProductCard = dynamic(() => import('./components/ProductCard'), { ssr: false })
 const Footer = dynamic(() => import('./components/Footer'), { ssr: false })
 
-const collections = [
-  {
-    title: 'Plastic Crockery',
-    label: 'Lightweight & durable',
-    category: 'Plastic Crockery',
-    image: '/images/category-plastic.svg',
-  },
-  {
-    title: 'Glassware',
-    label: 'Everyday glass',
-    category: 'Glassware',
-    image: '/images/category-glassware.svg',
-  },
-  {
-    title: 'Melamine',
-    label: 'Colourful & sturdy',
-    category: 'Melamine',
-    image: '/images/category-melamine.svg',
-  },
-]
+const DEFAULT_CATEGORY_IMAGE = '/images/category-crockery.svg'
 
 export default function Home() {
   const router = useRouter()
@@ -44,7 +25,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!supabase) return
-    supabase.from('products').select('*').in('category', CATEGORIES).order('created_at', { ascending: false }).limit(200).then(({ data }) => {
+    supabase.from('products').select('*').order('created_at', { ascending: false }).limit(200).then(({ data }) => {
       setProducts(data || [])
       setLoading(false)
     })
@@ -52,8 +33,15 @@ export default function Home() {
 
   const shop = (category) => router.push(category ? `/shop?category=${encodeURIComponent(category)}` : '/shop')
 
+  const collections = siteSettings.categories.map(category => ({
+    title: category,
+    label: 'Shop collection',
+    category,
+    image: CATEGORY_IMAGES[category] || DEFAULT_CATEGORY_IMAGE,
+  }))
+
   const featured = (() => {
-    const picked = CATEGORIES.map(category => products.find(product => product.category === category)).filter(Boolean)
+    const picked = siteSettings.categories.map(category => products.find(product => product.category === category)).filter(Boolean)
     for (const product of products) {
       if (picked.length >= 4) break
       if (!picked.some(item => item.id === product.id)) picked.push(product)
@@ -106,12 +94,12 @@ export default function Home() {
         />
         <div className="fashion-hero__shade" />
         <motion.div className="fashion-hero__content" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65 }}>
-          <p className="eyebrow eyebrow--light">Plastic &bull; Glass &bull; Melamine</p>
+          <p className="eyebrow eyebrow--light">{siteSettings.categories.join(' \u2022 ')}</p>
           <h1>Made for the<br /><em>everyday table.</em></h1>
           <p className="fashion-hero__copy">Plastic, glass and melamine crockery chosen for the way you actually eat, serve and gather. Practical pieces, honest prices, delivered across Pakistan.</p>
           <div className="fashion-hero__actions">
             <button className="button button--cream" onClick={() => shop()}>Shop the collection <FiArrowRight /></button>
-            <button className="text-button text-button--light" onClick={() => shop('Glassware')}>Explore glassware</button>
+            <button className="text-button text-button--light" onClick={() => shop(siteSettings.categories[0])}>Explore {siteSettings.categories[0]}</button>
           </div>
         </motion.div>
         <div className="fashion-hero__note">{siteSettings.announcement} <span>&bull;</span> {siteSettings.returnsNote}</div>
@@ -128,7 +116,7 @@ export default function Home() {
       <section className="category-showcase content-width">
         {collections.map((item, index) => (
           <motion.button className={`category-tile category-tile--${index + 1}`} key={item.title} onClick={() => shop(item.category)} whileHover={{ y: -5 }}>
-            <Image src={item.image} alt="" fill sizes="(max-width: 760px) 100vw, 25vw" />
+            <Image src={item.image} alt="" fill priority={index < 2} sizes="(max-width: 760px) 100vw, 25vw" />
             <span className="category-tile__veil" />
             <span className="category-tile__body"><small>{item.label}</small><strong>{item.title}</strong><span>Shop collection <FiArrowRight /></span></span>
           </motion.button>

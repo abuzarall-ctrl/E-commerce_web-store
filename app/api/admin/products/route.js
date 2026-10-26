@@ -24,7 +24,7 @@ function buildProductFields(body) {
   const fields = {}
   if ('name' in body) fields.name = String(body.name || '').trim()
   if ('description' in body) fields.description = String(body.description || '').trim()
-  if ('category' in body) fields.category = CATEGORIES.includes(body.category) ? body.category : CATEGORIES[0]
+  if ('category' in body) fields.category = String(body.category || '').trim().slice(0, 60) || CATEGORIES[0]
   if ('price' in body) fields.price = Number(body.price)
   if ('discount' in body) fields.discount = Math.min(100, Math.max(0, Number(body.discount) || 0))
   if ('image_url' in body) fields.image_url = String(body.image_url || '').trim()

@@ -5,13 +5,14 @@ import { supabase } from '@/lib/supabaseClient'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiCheckCircle, FiShoppingBag, FiArrowRight, FiHome,
-  FiPhone, FiTruck, FiCreditCard, FiAlertCircle, FiCopy, FiCheck, FiUpload
+  FiPhone, FiTruck, FiCreditCard, FiAlertCircle, FiCopy, FiCheck, FiUpload, FiDownload
 } from 'react-icons/fi'
 import Image from 'next/image'
 import Navbar from '@/app/components/Navbar'
 import Footer from '@/app/components/Footer'
 import { productStockQuantity } from '@/lib/categories'
 import { readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
+import { useAuthStatus } from '@/app/components/AuthStatusProvider'
 
 const CITIES = [
   'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
@@ -202,6 +203,7 @@ function PaymentInstructions({ method, total, submitted = false }) {
 // ── Checkout Page ─────────────────────────────────────────────────────────────
 export default function CheckoutPage() {
   const router = useRouter()
+  const { isAdmin } = useAuthStatus()
   const [items, setItems] = useState([])
   const [user, setUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -212,6 +214,7 @@ export default function CheckoutPage() {
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cod')
   const [receiptFile, setReceiptFile] = useState(null)
+  const [receiptDownloading, setReceiptDownloading] = useState(false)
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', address: '', city: '', notes: '' })
 
@@ -242,6 +245,53 @@ export default function CheckoutPage() {
         <Navbar />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
           Checking session...
+        </div>
+        <Footer />
+      </main>
+    )
+  }
+
+  if (isAdmin) {
+    return (
+      <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Navbar />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+          <div style={{
+            maxWidth: '460px', width: '100%', textAlign: 'center',
+            background: 'var(--bg-surface)', border: '1px solid var(--border)',
+            borderRadius: '16px', padding: '36px 28px'
+          }}>
+            <FiAlertCircle size={38} color="var(--accent)" />
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--text-primary)', margin: '16px 0 8px' }}>
+              Admin accounts cannot place orders
+            </h1>
+            <p style={{ fontSize: '14px', color: 'var(--text-faint)', lineHeight: '1.7', marginBottom: '22px' }}>
+              You are signed in as an admin. Log out and use a customer account to add items and complete a purchase.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => router.push('/admin')}
+                style={{
+                  width: '100%', padding: '12px', border: 'none', borderRadius: '9px',
+                  background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                  fontSize: '14px', fontWeight: '700', cursor: 'pointer'
+                }}>
+                Back to admin panel
+              </button>
+              <button
+                onClick={async () => {
+                  if (supabase) await supabase.auth.signOut()
+                  router.push('/shop')
+                }}
+                style={{
+                  width: '100%', padding: '11px', borderRadius: '9px',
+                  background: 'transparent', color: 'var(--text-faint)',
+                  border: '1px solid var(--border)', fontSize: '13px', cursor: 'pointer'
+                }}>
+                Log out &amp; continue shopping
+              </button>
+            </div>
+          </div>
         </div>
         <Footer />
       </main>
@@ -281,6 +331,10 @@ export default function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
+    if (isAdmin) {
+      setError('Admin accounts cannot place orders. Please sign in with a customer account.')
+      return
+    }
     setPhoneTouched(true)
     const err = validate()
     if (err) { setError(err); return }
@@ -362,6 +416,35 @@ export default function CheckoutPage() {
     }
   }
 
+  const downloadReceipt = async () => {
+    if (!orderId || receiptDownloading) return
+    setReceiptDownloading(true)
+    try {
+      const params = new URLSearchParams({ id: orderId })
+      if (form.email.trim()) params.set('contact', form.email.trim())
+      const response = await fetch(`/api/orders/receipt?${params.toString()}`)
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result.error || 'Could not download your receipt.')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `receipt-${orderId.slice(0, 8).toUpperCase()}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      window.dispatchEvent(new CustomEvent('appToast', {
+        detail: { message: err.message || 'Could not download your receipt.' }
+      }))
+    } finally {
+      setReceiptDownloading(false)
+    }
+  }
+
   const selectedPayment = PAYMENT_METHODS.find(m => m.id === paymentMethod)
 
   // ── Success screen ──────────────────────────────────────────────────────────
@@ -422,6 +505,22 @@ export default function CheckoutPage() {
                 request help or a refund after delivery.
               </motion.p>
             )}
+
+            <motion.button
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}
+              onClick={downloadReceipt}
+              disabled={receiptDownloading}
+              style={{
+                width: '100%', padding: '12px', marginBottom: '20px',
+                background: 'var(--bg-surface2)', color: 'var(--text-primary)',
+                border: '1px solid var(--border)', borderRadius: '10px',
+                fontSize: '13px', fontWeight: '700',
+                cursor: receiptDownloading ? 'wait' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              }}>
+              <FiDownload size={15} color="var(--accent)" />
+              {receiptDownloading ? 'Preparing receipt...' : 'Download receipt (PDF)'}
+            </motion.button>
 
             {/* Payment instructions (non-COD methods) */}
             <PaymentInstructions method={selectedPayment} total={subtotal} />

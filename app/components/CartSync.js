@@ -61,15 +61,17 @@ export default function CartSync() {
       if (!active) return
       userRef.current = session?.user ?? null
       if (session?.user) restore(session)
-      else clearCart()
+      else enableCartPersistence()
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       userRef.current = session?.user ?? null
       if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
         restore(session)
-      } else if ((event === 'INITIAL_SESSION' || event === 'SIGNED_OUT') && !session?.user) {
+      } else if (event === 'SIGNED_OUT') {
         clearCart()
+      } else if (event === 'INITIAL_SESSION' && !session?.user) {
+        enableCartPersistence()
       }
     })
 

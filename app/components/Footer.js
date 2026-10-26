@@ -2,7 +2,6 @@
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { FiMapPin, FiPhone, FiMail, FiHeart, FiArrowRight, FiInstagram, FiFacebook, FiMessageCircle, FiRotateCcw } from 'react-icons/fi'
-import { CATEGORIES } from '@/lib/categories'
 import { useSiteSettings } from './SiteSettingsProvider'
 
 const fadeUp = {
@@ -25,7 +24,7 @@ export default function Footer() {
   const router = useRouter()
   const settings = useSiteSettings()
 
-  const categories = CATEGORIES
+  const categories = settings.categories
   const contact = [
     { icon: FiMapPin, text: settings.address },
     { icon: FiPhone, text: settings.phone, href: `tel:${settings.phone.replace(/\s+/g, '')}` },

@@ -41,7 +41,7 @@ export async function POST(request) {
     return {
       name: String(p.name || '').trim(),
       description: String(p.description || '').trim(),
-      category: CATEGORIES.includes(p.category) ? p.category : CATEGORIES[0],
+      category: String(p.category || '').trim().slice(0, 60) || CATEGORIES[0],
       price: Number(p.price),
       discount: Math.min(100, Math.max(0, Number(p.discount) || 0)),
       stock_quantity: stockQuantity,

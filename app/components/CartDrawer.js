@@ -2,14 +2,15 @@
 import { useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight } from 'react-icons/fi'
+import { FiShoppingCart, FiShoppingBag, FiX, FiTrash2, FiArrowRight, FiAlertCircle } from 'react-icons/fi'
 import Image from 'next/image'
-import { supabase } from '@/lib/supabaseClient'
 import { writeCartToStorage } from '@/lib/cartStorage'
 import { subscribeCart, getCartItems, refreshCart } from '@/lib/cartStore'
+import { useAuthStatus } from './AuthStatusProvider'
 
 export default function CartDrawer({ isOpen, onClose }) {
   const router = useRouter()
+  const { isAdmin } = useAuthStatus()
   const emptyCartRef = useRef([])
   const items = useSyncExternalStore(subscribeCart, getCartItems, () => emptyCartRef.current)
 
@@ -282,29 +283,36 @@ export default function CartDrawer({ isOpen, onClose }) {
               </span>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={async () => {
-                let session = null
-                if (supabase) {
-                  const { data } = await supabase.auth.getSession()
-                  session = data.session
-                }
-                onClose()
-                router.push(session ? '/checkout' : '/auth/login?redirect=/checkout')
-              }}
-              style={{
-                width: '100%', padding: '14px',
-                background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
-                border: 'none', borderRadius: '10px',
-                fontSize: '15px', fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
+            {isAdmin ? (
+              <div style={{
+                padding: '12px 14px', borderRadius: '9px',
+                background: 'rgba(212,163,115,0.08)', border: '1px solid var(--border)',
+                display: 'flex', gap: '8px', alignItems: 'flex-start',
+                fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6'
               }}>
-              Proceed to Checkout <FiArrowRight size={16} />
-            </motion.button>
+                <FiAlertCircle size={14} style={{ flexShrink: 0, marginTop: '1px', color: 'var(--accent)' }} />
+                Admin accounts cannot place orders. Sign in with a customer account to checkout.
+              </div>
+            ) : (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  onClose()
+                  router.push('/checkout')
+                }}
+                style={{
+                  width: '100%', padding: '14px',
+                  background: 'var(--gradient-accent)', color: 'var(--bg-primary)',
+                  border: 'none', borderRadius: '10px',
+                  fontSize: '15px', fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 4px 20px rgba(212,163,115,0.3)'
+                }}>
+                Proceed to Checkout <FiArrowRight size={16} />
+              </motion.button>
+            )}
 
             <button
               onClick={onClose}

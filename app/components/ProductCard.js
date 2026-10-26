@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { appendCartItem } from '@/lib/cartStorage'
 import { toggleWishlistItem } from '@/lib/wishlistStorage'
 import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
+import { useAuthStatus } from './AuthStatusProvider'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -21,6 +22,7 @@ const stockTextColor = {
 
 export default function ProductCard({ product }) {
   const router = useRouter()
+  const { isAdmin } = useAuthStatus()
   const [added, setAdded] = useState(false)
   const emptyWishlistRef = useRef([])
   const wishlist = useSyncExternalStore(subscribeWishlist, getWishlistItems, () => emptyWishlistRef.current)
@@ -32,6 +34,10 @@ export default function ProductCard({ product }) {
 
   const handleAddToCart = (e) => {
     e.stopPropagation()
+    if (isAdmin) {
+      window.dispatchEvent(new CustomEvent('appToast', { detail: { message: 'Admin accounts cannot place orders. Sign in as a customer to buy.' } }))
+      return
+    }
     if (added || product.stock_status === 'out of stock') return
     appendCartItem(product)
     window.dispatchEvent(new CustomEvent('appToast', { detail: { message: `${product.name} added to cart` } }))
@@ -47,6 +53,7 @@ export default function ProductCard({ product }) {
   }
 
   const outOfStock = product.stock_status === 'out of stock'
+  const cartBlocked = outOfStock || isAdmin
 
   return (
     <motion.div
@@ -159,20 +166,20 @@ export default function ProductCard({ product }) {
         </div>
 
         <motion.button
-          whileHover={{ scale: outOfStock ? 1 : 1.02 }}
-          whileTap={{ scale: outOfStock ? 1 : 0.96 }}
+          whileHover={{ scale: cartBlocked ? 1 : 1.02 }}
+          whileTap={{ scale: cartBlocked ? 1 : 0.96 }}
           disabled={outOfStock}
           onClick={handleAddToCart}
           animate={added ? { scale: [1, 1.06, 1] } : {}}
           transition={{ duration: 0.3 }}
           style={{
             width: '100%', padding: '10px',
-            background: outOfStock
+            background: cartBlocked
               ? 'var(--bg-surface2)'
               : added
               ? 'rgba(134,239,172,0.15)'
               : 'var(--gradient-accent)',
-            color: outOfStock
+            color: cartBlocked
               ? 'var(--text-faint)'
               : added
               ? '#86EFAC'
@@ -180,9 +187,9 @@ export default function ProductCard({ product }) {
             border: added ? '1px solid rgba(134,239,172,0.3)' : 'none',
             borderRadius: '8px',
             fontSize: '13px', fontWeight: '600',
-            cursor: outOfStock ? 'not-allowed' : 'pointer',
+            cursor: cartBlocked ? 'not-allowed' : 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-            boxShadow: outOfStock || added ? 'none' : '0 2px 12px rgba(212,163,115,0.25)',
+            boxShadow: cartBlocked || added ? 'none' : '0 2px 12px rgba(212,163,115,0.25)',
             transition: 'background 0.3s, color 0.3s, border 0.3s, box-shadow 0.3s'
           }}>
           <AnimatePresence mode="wait">
@@ -203,7 +210,7 @@ export default function ProductCard({ product }) {
                 exit={{ opacity: 0, y: -6 }}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <FiShoppingCart size={14} />
-                {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+                {isAdmin ? 'Admin account' : outOfStock ? 'Out of Stock' : 'Add to Cart'}
               </motion.span>
             )}
           </AnimatePresence>

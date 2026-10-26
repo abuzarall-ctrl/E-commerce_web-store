@@ -13,7 +13,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {
-    optimizePackageImports: ['framer-motion', 'gsap', 'react-icons'],
+    optimizePackageImports: ['framer-motion', 'react-icons'],
   },
 }
 

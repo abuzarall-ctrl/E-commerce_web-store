@@ -13,6 +13,7 @@ import { appendCartItem } from '@/lib/cartStorage'
 import { toggleWishlistItem } from '@/lib/wishlistStorage'
 import { subscribeWishlist, getWishlistItems, initWishlistStore } from '@/lib/wishlistStore'
 import { addRecentlyViewed } from '@/lib/recentlyViewed'
+import { useAuthStatus } from '@/app/components/AuthStatusProvider'
 
 const stockColor = {
   'in stock': 'var(--badge-green)',
@@ -33,6 +34,7 @@ const fadeUp = {
 export default function ProductDetailPage() {
   const { id } = useParams()
   const router = useRouter()
+  const { isAdmin } = useAuthStatus()
   const [product, setProduct] = useState(null)
   const [related, setRelated] = useState([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,14 @@ export default function ProductDetailPage() {
     ? product.price - (product.price * product.discount / 100)
     : product?.price
 
+  const cartBlocked = isAdmin || product?.stock_status === 'out of stock'
+
   const handleAddToCart = () => {
+    if (isAdmin) {
+      window.dispatchEvent(new CustomEvent('appToast', { detail: { message: 'Admin accounts cannot place orders. Sign in as a customer to buy.' } }))
+      return
+    }
+    if (product.stock_status === 'out of stock') return
     appendCartItem(product, qty)
     window.dispatchEvent(new CustomEvent('appToast', { detail: { message: `${qty > 1 ? qty + ' x ' : ''}${product.name} added to cart` } }))
     setAdded(true)
@@ -253,28 +262,30 @@ export default function ProductDetailPage() {
             {/* Add to Cart + Wishlist */}
             <div style={{ display: 'flex', gap: '10px' }}>
               <motion.button
-                whileHover={{ scale: product.stock_status === 'out of stock' ? 1 : 1.02 }}
-                whileTap={{ scale: product.stock_status === 'out of stock' ? 1 : 0.97 }}
+                whileHover={{ scale: cartBlocked ? 1 : 1.02 }}
+                whileTap={{ scale: cartBlocked ? 1 : 0.97 }}
                 onClick={handleAddToCart}
                 disabled={product.stock_status === 'out of stock'}
                 style={{
                   flex: 1,
                   padding: '16px',
-                  background: product.stock_status === 'out of stock'
+                  background: cartBlocked
                     ? 'var(--bg-surface2)'
                     : added ? 'rgba(204,213,174,0.2)' : 'var(--gradient-accent)',
-                  color: product.stock_status === 'out of stock'
+                  color: cartBlocked
                     ? 'var(--text-faint)'
                     : added ? 'var(--badge-green)' : 'var(--bg-primary)',
                   border: added ? '1px solid var(--badge-green)' : 'none',
                   borderRadius: '10px',
                   fontSize: '15px', fontWeight: '700',
-                  cursor: product.stock_status === 'out of stock' ? 'not-allowed' : 'pointer',
+                  cursor: cartBlocked ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  boxShadow: added || product.stock_status === 'out of stock' ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
+                  boxShadow: cartBlocked || added ? 'none' : '0 4px 20px rgba(212,163,115,0.3)'
                 }}>
                 {product.stock_status === 'out of stock' ? (
                   'Out of Stock'
+                ) : isAdmin ? (
+                  'Admin account'
                 ) : added ? (
                   <><FiCheck size={16} /> Added to Cart</>
                 ) : (
@@ -297,6 +308,16 @@ export default function ProductDetailPage() {
                 <FiHeart size={18} color={wished ? '#E24B4A' : 'var(--text-faint)'} fill={wished ? '#E24B4A' : 'none'} />
               </motion.button>
             </div>
+
+            {isAdmin && (
+              <p style={{
+                marginTop: '-6px', padding: '10px 12px', borderRadius: '8px',
+                background: 'rgba(212,163,115,0.08)', border: '1px solid var(--border)',
+                fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.6'
+              }}>
+                You are signed in as an admin. Admin accounts cannot place orders — sign in with a customer account to buy.
+              </p>
+            )}
 
             {/* Back */}
             <motion.button
