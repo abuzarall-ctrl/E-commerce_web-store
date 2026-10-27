@@ -13,67 +13,13 @@ import Footer from '@/app/components/Footer'
 import { productStockQuantity } from '@/lib/categories'
 import { readCartFromStorage, writeCartToStorage } from '@/lib/cartStorage'
 import { useAuthStatus } from '@/app/components/AuthStatusProvider'
+import { PAYMENT_METHODS, availablePaymentMethods, normalizePaymentMethods } from '@/lib/paymentMethods'
+import { DEFAULT_SITE_SETTINGS } from '@/lib/siteSettings'
 
 const CITIES = [
   'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad',
   'Multan', 'Peshawar', 'Quetta', 'Sialkot', 'Gujranwala',
   'Hyderabad', 'Bahawalpur', 'Sargodha', 'Sukkur', 'Other'
-]
-
-const PAYMENT_METHODS = [
-  {
-    id: 'cod',
-    name: 'Cash on Delivery',
-    short: 'COD',
-    desc: 'Pay when your order arrives at your door',
-    badge: 'Most Popular',
-    color: '#CCD5AE',
-    successNote: null
-  },
-  {
-    id: 'jazzcash',
-    name: 'JazzCash',
-    short: 'JazzCash',
-    desc: 'Send payment to our JazzCash wallet',
-    badge: null,
-    color: '#CC0000',
-    successNote: {
-      title: 'Send Payment via JazzCash',
-      number: '+92 330 2816964',
-      account: 'Abuzar',
-      instruction: 'Send the total amount to this JazzCash number, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
-    }
-  },
-  {
-    id: 'easypaisa',
-    name: 'Easypaisa',
-    short: 'Easypaisa',
-    desc: 'Send payment to our Easypaisa account',
-    badge: null,
-    color: '#4AAD52',
-    successNote: {
-      title: 'Send Payment via Easypaisa',
-      number: '+92 330 2816964',
-      account: 'Abuzar',
-      instruction: 'Send the total amount to this Easypaisa number, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
-    }
-  },
-  {
-    id: 'bank',
-    name: 'Bank Transfer',
-    short: 'Bank',
-    desc: 'Direct deposit to our bank account',
-    badge: null,
-    color: '#4A90D9',
-    successNote: {
-      title: 'Bank Transfer Details',
-      bank: 'Meezan Bank',
-      accountName: 'Abuzar',
-      accountNumber: '01330115617457',
-      iban: '',
-      instruction: 'Transfer the total amount to the account above, then upload the transaction receipt below. Our team verifies it manually before confirming your order.'
-    }
-  }
 ]
 
 const inputStyle = {
@@ -213,6 +159,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [phoneTouched, setPhoneTouched] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState('cod')
+  const [paymentMethods, setPaymentMethods] = useState(DEFAULT_SITE_SETTINGS.paymentMethods)
   const [receiptFile, setReceiptFile] = useState(null)
   const [receiptDownloading, setReceiptDownloading] = useState(false)
 
@@ -222,9 +169,16 @@ export default function CheckoutPage() {
     const init = async () => {
       setItems(readCartFromStorage())
 
+      const settingsPromise = fetch('/api/site-settings', { cache: 'no-store' })
+        .then(response => response.ok ? response.json() : null)
+        .catch(() => null)
+
       const { data: { session } } = supabase
         ? await supabase.auth.getSession()
         : { data: { session: null } }
+
+      const settings = await settingsPromise
+      setPaymentMethods(normalizePaymentMethods(settings?.settings?.paymentMethods))
 
       if (session?.user) {
         setUser(session.user)
@@ -303,6 +257,10 @@ export default function CheckoutPage() {
 
   const subtotal = items.reduce((s, i) => s + Math.round(discounted(i)) * i.qty, 0)
   const totalItems = items.reduce((s, i) => s + i.qty, 0)
+  const availableMethods = availablePaymentMethods(paymentMethods)
+  const activePaymentMethod = availableMethods.some(method => method.id === paymentMethod)
+    ? paymentMethod
+    : availableMethods[0]?.id || ''
 
   const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }))
 
@@ -326,7 +284,9 @@ export default function CheckoutPage() {
     if (!form.address.trim()) return 'Delivery address is required'
     if (!form.city) return 'Please select a city'
     if (items.length === 0) return 'Your cart is empty'
-    if (paymentMethod !== 'cod' && !receiptFile) return 'Please upload your online payment receipt'
+    if (availableMethods.length === 0) return 'Payments are temporarily unavailable. Please contact the store.'
+    if (!activePaymentMethod) return 'Please choose an available payment method'
+    if (activePaymentMethod !== 'cod' && !receiptFile) return 'Please upload your online payment receipt'
     return null
   }
 
@@ -388,7 +348,7 @@ export default function CheckoutPage() {
       city: form.city,
     }))
     formData.append('notes', form.notes)
-    formData.append('paymentMethod', paymentMethod)
+    formData.append('paymentMethod', activePaymentMethod)
     if (receiptFile) formData.append('receipt', receiptFile)
 
     try {
@@ -445,7 +405,7 @@ export default function CheckoutPage() {
     }
   }
 
-  const selectedPayment = PAYMENT_METHODS.find(m => m.id === paymentMethod)
+  const selectedPayment = availableMethods.find(m => m.id === activePaymentMethod)
 
   // ── Success screen ──────────────────────────────────────────────────────────
   if (success) {
@@ -526,7 +486,7 @@ export default function CheckoutPage() {
             <PaymentInstructions method={selectedPayment} total={subtotal} />
 
             {/* COD summary */}
-            {paymentMethod === 'cod' && (
+            {activePaymentMethod === 'cod' && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
                 style={{
@@ -796,11 +756,20 @@ export default function CheckoutPage() {
                   Payment Method
                 </h2>
 
+                {availableMethods.length === 0 ? (
+                  <p style={{
+                    padding: '14px 16px', borderRadius: '10px', fontSize: '13px', lineHeight: 1.6,
+                    color: '#FAEDCD', background: 'rgba(250,237,205,0.08)',
+                    border: '1px solid rgba(250,237,205,0.25)'
+                  }}>
+                    Online payments are temporarily unavailable. Please contact the store to place your order.
+                  </p>
+                ) : (
                 <div className="payment-grid" style={{
                   display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px'
                 }}>
-                  {PAYMENT_METHODS.map(method => {
-                    const selected = paymentMethod === method.id
+                  {availableMethods.map(method => {
+                    const selected = activePaymentMethod === method.id
                     return (
                       <motion.div
                         key={method.id}
@@ -856,9 +825,10 @@ export default function CheckoutPage() {
                     )
                   })}
                 </div>
+                )}
 
                 {/* Online payment details + receipt */}
-                {paymentMethod !== 'cod' && (
+                {selectedPayment && activePaymentMethod !== 'cod' && (
                   <motion.div
                     initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
                     style={{ marginTop: '16px' }}>

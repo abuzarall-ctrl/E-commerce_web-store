@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { buildOrderPayload } from '@/lib/orderPayload'
 import { productStockQuantity } from '@/lib/categories'
 import { isAdminRole } from '@/lib/adminRoles'
+import { readSiteSettings } from '@/lib/siteSettingsServer'
+import { clientIp, rateLimit, rateLimitResponse } from '@/lib/rateLimit'
 
 export const runtime = 'nodejs'
 
@@ -64,6 +66,9 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Ordering is temporarily unavailable.' }, { status: 500 })
   }
 
+  const limit = rateLimit(`orders:${clientIp(request)}`, { limit: 10, windowMs: 60_000 })
+  if (!limit.allowed) return rateLimitResponse(limit)
+
   let formData
   try {
     formData = await request.formData()
@@ -99,6 +104,11 @@ export async function POST(request) {
   }
   if (delivery.phone.replace(/\D/g, '').length < 10) {
     return NextResponse.json({ error: 'Enter a valid phone number.' }, { status: 400 })
+  }
+
+  const settings = await readSiteSettings()
+  if (settings.paymentMethods?.[paymentMethod] === false) {
+    return NextResponse.json({ error: 'This payment method is currently unavailable.' }, { status: 400 })
   }
 
   const isOnlinePayment = paymentMethod !== 'cod'

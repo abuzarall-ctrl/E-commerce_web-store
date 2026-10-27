@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AbuzarStore
 
-## Getting Started
+Custom e-commerce storefront for AbuzarStore, built with Next.js 16, React 19, Tailwind CSS 4 and Supabase.
 
-First, run the development server:
+## Local setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only key for orders, receipts and admin APIs |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | SMTP server details |
+| `SMTP_USER` / `SMTP_PASS` | SMTP login (for Gmail use an App Password) |
+| `SMTP_FROM` | From header, e.g. `AbuzarStore <you@gmail.com>` |
+| `STORE_NAME` | Store name used in emails and receipts |
 
-## Learn More
+Never expose `SUPABASE_SERVICE_ROLE_KEY` or SMTP credentials to the browser.
 
-To learn more about Next.js, take a look at the following resources:
+## Admin access
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create the user in Supabase → Authentication → Users → Add user.
+2. Grant the admin role:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+node scripts/make-admin.mjs admin@example.com
+```
 
-## Deploy on Vercel
+3. Reset an admin password without putting it in shell history:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+ADMIN_NEW_PASSWORD="use-a-password-manager" npm run admin:reset -- admin@example.com
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Enable MFA for the admin account in Supabase → Authentication → Providers → MFA.
+5. Sign in at `/admin/login`.
+
+## Email / SMTP
+
+Order confirmation emails include the PDF receipt. Test SMTP and PDF attachment delivery with:
+
+```bash
+npm run test:smtp -- you@example.com
+```
+
+The store skips email safely when SMTP is not configured. Add the same variables to Vercel → Project Settings → Environment Variables for production.
+
+## Tests
+
+Start the app, then run the hermetic Playwright regressions:
+
+```bash
+npm run test:e2e
+```
+
+Run the live receipt test against the latest order in Supabase:
+
+```bash
+npm run test:e2e:live
+```
+
+CI runs lint, build and the regression suite on every push/PR. Add these repository secrets for the E2E step: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+
+## Payment methods
+
+Admins can enable or disable Cash on Delivery, JazzCash, Easypaisa and Bank Transfer from Admin → Site Info → Payment methods. Disabled methods are hidden at checkout and rejected by `POST /api/orders`.

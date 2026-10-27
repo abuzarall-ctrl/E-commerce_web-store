@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { getOrderDetails } from '@/lib/orderPayload'
 import { isAdminRole } from '@/lib/adminRoles'
 import { buildOrderReceiptPdf, orderReceiptFilename } from '@/lib/orderReceipt'
+import { clientIp, rateLimit, rateLimitResponse } from '@/lib/rateLimit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -39,6 +40,9 @@ export async function GET(request) {
   if (!serviceKey) {
     return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
   }
+
+  const limit = rateLimit(`receipt:${clientIp(request)}`, { limit: 20, windowMs: 60_000 })
+  if (!limit.allowed) return rateLimitResponse(limit)
 
   const { searchParams } = new URL(request.url)
   const id = String(searchParams.get('id') || '').trim()

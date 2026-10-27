@@ -20,6 +20,7 @@ import {
 import { parseProductSheet, CSV_TEMPLATE, downloadTextFile } from '@/lib/productCsv'
 import { getOrderDetails, orderItemCount } from '@/lib/orderPayload'
 import { DEFAULT_SITE_SETTINGS, normalizeSiteSettings } from '@/lib/siteSettings'
+import { PAYMENT_METHODS } from '@/lib/paymentMethods'
 import { ADMIN_ROLE, isAdminRole, isSuperAdminRole } from '@/lib/adminRoles'
 
 const fadeUp = {
@@ -298,6 +299,21 @@ export default function AdminPanel() {
     setSiteForm(previous => ({ ...previous, [key]: value }))
     setSiteMessage('')
     setSiteError('')
+  }
+
+  function togglePaymentMethod(methodId) {
+    const current = siteForm.paymentMethods || DEFAULT_SITE_SETTINGS.paymentMethods
+    const currentlyEnabled = current[methodId] !== false
+    const enabledCount = PAYMENT_METHODS.filter(method => current[method.id] !== false).length
+    if (currentlyEnabled && enabledCount <= 1) {
+      setSiteError('At least one payment method must stay enabled.')
+      return
+    }
+    updateSiteField('paymentMethods', {
+      ...current,
+      [methodId]: !currentlyEnabled,
+    })
+    setSiteMessage('Payment method updated. Click "Save site info" to publish.')
   }
 
   function addCategory() {
@@ -1884,6 +1900,54 @@ export default function AdminPanel() {
                       style={{ ...inputStyle, resize: 'vertical', minHeight: '88px', fontFamily: 'inherit' }}
                     />
                   </label>
+                </div>
+
+                <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                    Payment methods
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-faint)', lineHeight: 1.6, marginBottom: '14px' }}>
+                    Switch a method off to hide it from checkout. At least one method must stay enabled.
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '10px' }}>
+                    {PAYMENT_METHODS.map(method => {
+                      const enabled = siteForm.paymentMethods?.[method.id] !== false
+                      return (
+                        <div key={method.id} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                          padding: '12px 14px', borderRadius: '10px',
+                          background: 'var(--bg-surface2)', border: '1px solid var(--border)'
+                        }}>
+                          <div style={{ minWidth: 0 }}>
+                            <p style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{method.name}</p>
+                            <p style={{ fontSize: '11px', color: enabled ? '#2F7F75' : 'var(--text-faint)', marginTop: '3px' }}>
+                              {enabled ? 'Enabled at checkout' : 'Hidden from checkout'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={enabled}
+                            aria-label={`${enabled ? 'Disable' : 'Enable'} ${method.name}`}
+                            onClick={() => togglePaymentMethod(method.id)}
+                            style={{
+                              width: '44px', height: '24px', flexShrink: 0, padding: '2px',
+                              borderRadius: '999px', border: '1px solid var(--border)',
+                              background: enabled ? 'var(--accent)' : 'var(--bg-primary)',
+                              display: 'flex', alignItems: 'center',
+                              justifyContent: enabled ? 'flex-end' : 'flex-start',
+                              cursor: 'pointer', transition: 'background 0.2s'
+                            }}>
+                            <span style={{
+                              width: '18px', height: '18px', borderRadius: '50%',
+                              background: enabled ? 'var(--bg-primary)' : 'var(--text-faint)',
+                              display: 'block', transition: 'all 0.2s'
+                            }} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>

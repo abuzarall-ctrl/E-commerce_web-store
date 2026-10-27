@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getOrderDetails } from '@/lib/orderPayload'
+import { clientIp, rateLimit, rateLimitResponse } from '@/lib/rateLimit'
 
 export const runtime = 'nodejs'
 
@@ -33,6 +34,9 @@ export async function POST(request) {
   if (!supabaseUrl || !serviceKey) {
     return NextResponse.json({ error: 'Refund requests are temporarily unavailable.' }, { status: 500 })
   }
+
+  const limit = rateLimit(`refund:${clientIp(request)}`, { limit: 5, windowMs: 60_000 })
+  if (!limit.allowed) return rateLimitResponse(limit)
 
   let body
   try {
