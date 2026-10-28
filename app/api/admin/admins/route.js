@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { ADMIN_ROLE, ADMIN_ROLES, SUPER_ADMIN_ROLE } from '@/lib/adminRoles'
+import { tokenHasMfa } from '@/lib/adminMfa'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -15,7 +16,7 @@ async function requireSuperAdmin(request) {
   if (!token || !anonKey) return null
   const authClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: { user }, error } = await authClient.auth.getUser(token)
-  if (error || user?.app_metadata?.role !== SUPER_ADMIN_ROLE) return null
+  if (error || user?.app_metadata?.role !== SUPER_ADMIN_ROLE || !tokenHasMfa(token)) return null
   return user
 }
 
@@ -32,7 +33,7 @@ function serializeAdmin(user) {
 
 export async function GET(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization required.' }, { status: 403 })
+  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const client = serviceClient()
   const users = []
@@ -59,7 +60,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization required.' }, { status: 403 })
+  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   const fullName = String(body.fullName || '').trim()
@@ -90,7 +91,7 @@ export async function POST(request) {
 
 export async function DELETE(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization required.' }, { status: 403 })
+  if (!await requireSuperAdmin(request)) return NextResponse.json({ error: 'Super admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   const id = String(body.id || '').trim()

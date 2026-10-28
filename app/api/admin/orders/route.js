@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { getOrderDetails } from '@/lib/orderPayload'
 import { productStockQuantity, stockStatusForQuantity } from '@/lib/categories'
 import { isAdminRole } from '@/lib/adminRoles'
+import { tokenHasMfa } from '@/lib/adminMfa'
 import { sendOrderConfirmationEmail } from '@/lib/mailer'
 import { orderNumber } from '@/lib/orderSummary'
 
@@ -23,7 +24,7 @@ async function requireAdmin(request) {
   if (!token || !anonKey) return null
   const authClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: { user }, error } = await authClient.auth.getUser(token)
-  if (error || !isAdminRole(user?.app_metadata?.role)) return null
+  if (error || !isAdminRole(user?.app_metadata?.role) || !tokenHasMfa(token)) return null
   return user
 }
 
@@ -98,7 +99,7 @@ async function adjustOrderStock(client, order, direction) {
 
 export async function GET(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization required.' }, { status: 403 })
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
@@ -122,7 +123,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization required.' }, { status: 403 })
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json()
   const { id, action } = body

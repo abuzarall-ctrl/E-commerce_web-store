@@ -399,6 +399,42 @@
   line-height: 1.5;
 }
 
+.auth-mfa-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px;
+  background: #FFFDF8;
+  border: 1px solid rgba(169, 119, 63, 0.22);
+  border-radius: 12px;
+}
+.auth-mfa-qr {
+  width: 168px;
+  height: 168px;
+  display: block;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+.auth-mfa-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: #8C8170;
+}
+.auth-mfa-secret {
+  display: block;
+  max-width: 100%;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(169, 119, 63, 0.08);
+  color: #55493A;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+  text-align: center;
+  user-select: all;
+}
+
 .auth-note {
   display: flex;
   align-items: center;

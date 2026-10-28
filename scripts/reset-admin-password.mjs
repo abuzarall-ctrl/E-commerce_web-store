@@ -62,4 +62,4 @@ if (updateError) {
   process.exit(1)
 }
 
-console.log(`Password updated for ${user.email}. For MFA, enable TOTP in Supabase Authentication → Providers → MFA.`)
+console.log(`Password updated for ${user.email}. Sign in at /admin/login to enroll or verify TOTP MFA.`)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { CATEGORIES, STOCK_STATUSES, resolveStockQuantity, stockStatusForQuantity } from '@/lib/categories'
 import { isAdminRole } from '@/lib/adminRoles'
+import { tokenHasMfa } from '@/lib/adminMfa'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -16,7 +17,7 @@ async function requireAdmin(request) {
   if (!token || !anonKey) return null
   const authClient = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: { user }, error } = await authClient.auth.getUser(token)
-  if (error || !isAdminRole(user?.app_metadata?.role)) return null
+  if (error || !isAdminRole(user?.app_metadata?.role) || !tokenHasMfa(token)) return null
   return user
 }
 
@@ -41,7 +42,7 @@ function buildProductFields(body) {
 
 export async function POST(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization required.' }, { status: 403 })
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json()
   const product = buildProductFields(body)
@@ -54,7 +55,7 @@ export async function POST(request) {
 
 export async function PATCH(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization required.' }, { status: 403 })
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   const id = String(body.id || '').trim()
@@ -72,7 +73,7 @@ export async function PATCH(request) {
 
 export async function DELETE(request) {
   if (!serviceKey) return NextResponse.json({ error: 'Server database configuration is incomplete.' }, { status: 500 })
-  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization required.' }, { status: 403 })
+  if (!await requireAdmin(request)) return NextResponse.json({ error: 'Admin authorization with two-factor authentication required.' }, { status: 403 })
 
   const body = await request.json().catch(() => ({}))
   const id = String(body.id || '').trim()

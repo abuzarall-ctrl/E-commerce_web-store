@@ -23,6 +23,8 @@ Open http://localhost:3000.
 | `SMTP_USER` / `SMTP_PASS` | SMTP login (for Gmail use an App Password) |
 | `SMTP_FROM` | From header, e.g. `AbuzarStore <you@gmail.com>` |
 | `STORE_NAME` | Store name used in emails and receipts |
+| `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN; leave blank to disable error monitoring |
+| `SENTRY_ORG` / `SENTRY_PROJECT` / `SENTRY_AUTH_TOKEN` | Optional, only needed to upload source maps from CI/Vercel |
 
 Never expose `SUPABASE_SERVICE_ROLE_KEY` or SMTP credentials to the browser.
 
@@ -41,8 +43,8 @@ node scripts/make-admin.mjs admin@example.com
 ADMIN_NEW_PASSWORD="use-a-password-manager" npm run admin:reset -- admin@example.com
 ```
 
-4. Enable MFA for the admin account in Supabase → Authentication → Providers → MFA.
-5. Sign in at `/admin/login`.
+4. Sign in at `/admin/login`. On the first sign-in, scan the TOTP QR code with an authenticator app and enter the 6-digit code. Later sign-ins ask for the code.
+5. Admin APIs require an AAL2 session, so a password alone cannot access the dashboard. Make sure TOTP is enabled in Supabase → Authentication → Providers → Multi-Factor Authentication.
 
 ## Email / SMTP
 
@@ -53,6 +55,10 @@ npm run test:smtp -- you@example.com
 ```
 
 The store skips email safely when SMTP is not configured. Add the same variables to Vercel → Project Settings → Environment Variables for production.
+
+## Error monitoring
+
+Sentry is wired through `instrumentation.js`, `instrumentation-client.js`, `sentry.server.config.js` and `sentry.edge.config.js`. Set `NEXT_PUBLIC_SENTRY_DSN` to start reporting; without it the SDK stays disabled. Source-map upload is optional and only runs when `SENTRY_ORG`, `SENTRY_PROJECT` and `SENTRY_AUTH_TOKEN` are set.
 
 ## Tests
 

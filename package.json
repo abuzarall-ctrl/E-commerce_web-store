@@ -13,6 +13,7 @@
     "admin:reset": "node scripts/reset-admin-password.mjs"
   },
   "dependencies": {
+    "@sentry/nextjs": "^11.9.0",
     "@supabase/supabase-js": "^2.108.2",
     "framer-motion": "^12.41.0",
     "next": "^16.4.3",
