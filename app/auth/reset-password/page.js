@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { FiLock, FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi'
+import { FiLock, FiEye, FiEyeOff, FiCheckCircle, FiSmartphone, FiAlertTriangle } from 'react-icons/fi'
 import AuthLayout from '@/app/components/auth/AuthLayout'
 import AuthInput from '@/app/components/auth/AuthInput'
 import AuthButton from '@/app/components/auth/AuthButton'
@@ -18,32 +18,125 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
   const [ready, setReady] = useState(false)  // session exchanged and ready
+  const [linkError, setLinkError] = useState('')
+  const [mfaRequired, setMfaRequired] = useState(false)
+  const [mfaFactorId, setMfaFactorId] = useState('')
+  const [mfaCode, setMfaCode] = useState('')
+  const [mfaError, setMfaError] = useState('')
+  const [mfaLoading, setMfaLoading] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    let timer
+
+    const finishRecovery = async () => {
+      if (cancelled) return
+
+      try {
+        // MFA-enabled accounts need an AAL2 session before updateUser(password)
+        // is allowed. Prompt for the TOTP code now instead of failing later.
+        const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+        if (aal?.currentLevel !== 'aal2' && aal?.nextLevel === 'aal2') {
+          const { data: factors } = await supabase.auth.mfa.listFactors()
+          const verified = (factors?.all || []).find(
+            factor => factor.factor_type === 'totp' && factor.status === 'verified'
+          )
+          if (verified) {
+            if (cancelled) return
+            setMfaFactorId(verified.id)
+            setMfaRequired(true)
+          }
+        }
+      } catch {
+        // Ignore MFA lookup failures; the password form will surface the real error.
+      }
+
+      if (cancelled) return
+      clearTimeout(timer)
+      setReady(true)
+    }
+
     const init = async () => {
+      if (!supabase) {
+        setLinkError('Password reset is temporarily unavailable. Please try again later.')
+        setReady(true)
+        return
+      }
+      // Supabase can return link errors in the query string or hash.
+      const search = new URLSearchParams(window.location.search)
+      const hash = new URLSearchParams(window.location.hash.slice(1))
+      const hashError = hash.get('error_description') || hash.get('error')
+      const searchError = search.get('error_description') || search.get('error')
+      if (hashError || searchError) {
+        setLinkError(String(hashError || searchError).replace(/\+/g, ' '))
+        clearTimeout(timer)
+        setReady(true)
+        return
+      }
+
       // Exchange the reset code for a session
-      const code = new URLSearchParams(window.location.search).get('code')
+      const code = search.get('code')
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (!error) { setReady(true); return }
+        if (!error) { await finishRecovery(); return }
       }
 
       // Fallback: check if already in a recovery session (implicit flow)
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) { setReady(true); return }
+      if (session) { await finishRecovery(); return }
 
       // Listen for PASSWORD_RECOVERY event (Supabase sends this after redirect)
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) {
           subscription.unsubscribe()
-          setReady(true)
+          finishRecovery()
         }
       })
+
+      // If nothing arrives, the link was already used or has expired.
+      timer = setTimeout(() => {
+        if (!cancelled) {
+          setLinkError('This reset link is invalid or has expired. Please request a new one.')
+          setReady(true)
+        }
+      }, 8000)
     }
     init()
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [])
 
+  const handleMfaVerify = async () => {
+    if (!supabase) { setMfaError('Two-factor authentication is temporarily unavailable.'); return }
+    if (!/^\d{6}$/.test(mfaCode.trim())) {
+      setMfaError('Enter the 6-digit code from your authenticator app.')
+      return
+    }
+    setMfaLoading(true)
+    setMfaError('')
+    try {
+      const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId })
+      if (challengeError) throw challengeError
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: mfaFactorId,
+        challengeId: challenge.id,
+        code: mfaCode.trim(),
+      })
+      if (verifyError) throw verifyError
+      setMfaRequired(false)
+      setMfaCode('')
+    } catch (mfaErr) {
+      setMfaError(mfaErr.message || 'That code did not work. Please try again.')
+    } finally {
+      setMfaLoading(false)
+    }
+  }
+
   const handleReset = async () => {
+    if (!supabase) { setError('Password reset is temporarily unavailable. Please try again later.'); return }
     if (!password) { setError('Please enter a new password'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     if (password !== confirm) { setError('Passwords do not match'); return }
@@ -84,12 +177,65 @@ export default function ResetPasswordPage() {
     )
   }
 
+  if (linkError) {
+    return (
+      <AuthLayout>
+        <div className="auth-success">
+          <div className="auth-success-icon" style={{ color: '#C0503E' }}>
+            <FiAlertTriangle size={32} />
+          </div>
+          <h2>Reset link problem</h2>
+          <p>{linkError}</p>
+          <p className="auth-meta">Reset links can only be used once and expire after a short time.</p>
+          <AuthButton onClick={() => router.push('/auth/forgot-password')}>
+            Request a new link
+          </AuthButton>
+        </div>
+      </AuthLayout>
+    )
+  }
+
   if (!ready) {
     return (
       <AuthLayout>
         <div className="auth-center" style={{ minHeight: '40vh' }}>
           <div className="auth-spinner" />
           <p className="auth-spinner-text">Verifying reset link...</p>
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (mfaRequired) {
+    return (
+      <AuthLayout>
+        <h1 className="auth-h1">Two-factor authentication</h1>
+        <p className="auth-sub">
+          Enter the 6-digit code from your authenticator app to continue resetting your password.
+        </p>
+
+        <div className="auth-fields">
+          <AuthInput
+            id="reset-mfa-code"
+            label="Authentication code"
+            icon={FiSmartphone}
+            type="text"
+            placeholder="000000"
+            value={mfaCode}
+            onChange={e => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            onKeyDown={e => { if (e.key === 'Enter') handleMfaVerify() }}
+            name="one-time-code"
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            maxLength={6}
+            error={mfaError}
+          />
+
+          {mfaError && <div className="auth-err" role="alert">{mfaError}</div>}
+
+          <AuthButton onClick={handleMfaVerify} disabled={mfaLoading}>
+            {mfaLoading ? 'Verifying...' : 'Verify & Continue'}
+          </AuthButton>
         </div>
       </AuthLayout>
     )
