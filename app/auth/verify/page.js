@@ -49,7 +49,7 @@ function VerifyContent() {
 
     await supabase.from('users').upsert(
       { id: data.user.id, email: data.user.email, role: 'customer' },
-      { onConflict: 'id' }
+      { onConflict: 'id', ignoreDuplicates: true }
     )
 
     setLoading(false)

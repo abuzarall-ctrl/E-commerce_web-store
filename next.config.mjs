@@ -11,8 +11,9 @@ const nextConfig = {
     ],
   },
   compiler: {
-    // Strip all console.* calls in production builds
-    removeConsole: process.env.NODE_ENV === 'production',
+    // Strip noisy console.* calls in production but keep error/warn so server
+    // failures (for example admin creation) remain visible in Vercel logs.
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   experimental: {
     optimizePackageImports: ['framer-motion', 'react-icons'],

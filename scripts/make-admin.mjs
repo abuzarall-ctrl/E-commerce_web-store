@@ -27,8 +27,15 @@ const user = users.find(u => u.email === email)
 if (!user) { console.error(`No user found with email: ${email}`); process.exit(1) }
 
 const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
-  app_metadata: { role: 'admin' }
+  app_metadata: { ...user.app_metadata, role: 'admin' }
 })
 
 if (error) { console.error('Failed:', error.message); process.exit(1) }
+
+const { error: syncError } = await supabase.from('users').upsert(
+  { id: data.user.id, email: data.user.email, role: 'admin' },
+  { onConflict: 'id' }
+)
+if (syncError) console.warn('Admin role granted, but public.users sync failed:', syncError.message)
+
 console.log(`✓ Admin granted to ${data.user.email}`)

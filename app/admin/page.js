@@ -178,6 +178,8 @@ export default function AdminPanel() {
   const [adminsMessage, setAdminsMessage] = useState('')
   const [adminForm, setAdminForm] = useState({ fullName: '', email: '', password: '' })
   const [adminSaving, setAdminSaving] = useState(false)
+  const [adminIssue, setAdminIssue] = useState(null)
+  const [adminActionBusy, setAdminActionBusy] = useState(false)
 
   const isSuperAdmin = isSuperAdminRole(currentRole)
 
@@ -376,17 +378,18 @@ export default function AdminPanel() {
   }
 
   async function handleCreateAdmin() {
-    if (!adminForm.fullName.trim() || !adminForm.email.trim() || !adminForm.password) {
-      setAdminsError('Name, email and password are required.')
+    if (!adminForm.email.trim()) {
+      setAdminsError('Email is required.')
       return
     }
-    if (adminForm.password.length < 6) {
+    if (adminForm.password && adminForm.password.length < 6) {
       setAdminsError('Password must be at least 6 characters.')
       return
     }
     setAdminSaving(true)
     setAdminsError('')
     setAdminsMessage('')
+    setAdminIssue(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch('/api/admin/admins', {
@@ -396,16 +399,75 @@ export default function AdminPanel() {
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) {
+        if (result.code === 'existing_account' || result.code === 'already_admin') {
+          setAdminIssue({ code: result.code, account: result.account, error: result.error })
+          return
+        }
         setAdminsError(result.error || 'Unable to create admin.')
         return
       }
       setAdminForm({ fullName: '', email: '', password: '' })
-      setAdminsMessage(`${result.admin?.email || 'Admin'} can now sign in at /admin/login.`)
+      setAdminsMessage(`${result.admin?.email || 'Admin'} can now sign in at /admin/login and must set up two-factor authentication.`)
       await fetchAdmins()
     } catch {
       setAdminsError('Network error creating admin.')
     } finally {
       setAdminSaving(false)
+    }
+  }
+
+  async function handlePromoteAdmin(account) {
+    if (!account?.id) return
+    if (!confirm(`Promote ${account.email} to admin? They keep their current sign-in method and must set up two-factor authentication on next login.`)) return
+    setAdminActionBusy(true)
+    setAdminsError('')
+    setAdminsMessage('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/admins', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ id: account.id, action: 'promote', fullName: adminForm.fullName.trim() }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setAdminsError(result.error || 'Unable to promote this account.')
+        return
+      }
+      setAdminIssue(null)
+      setAdminForm({ fullName: '', email: '', password: '' })
+      setAdminsMessage(`${result.admin?.email || account.email} is now an admin. They must set up two-factor authentication on next login.`)
+      await fetchAdmins()
+    } catch {
+      setAdminsError('Network error promoting account.')
+    } finally {
+      setAdminActionBusy(false)
+    }
+  }
+
+  async function handleSendAdminReset(account) {
+    if (!account?.id) return
+    setAdminActionBusy(true)
+    setAdminsError('')
+    setAdminsMessage('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/admins', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ id: account.id, action: 'reset_password' }),
+      })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setAdminsError(result.error || 'Unable to send the reset email.')
+        return
+      }
+      setAdminIssue(null)
+      setAdminsMessage(result.message || `Password reset email sent to ${account.email}.`)
+    } catch {
+      setAdminsError('Network error sending the reset email.')
+    } finally {
+      setAdminActionBusy(false)
     }
   }
 
@@ -425,6 +487,7 @@ export default function AdminPanel() {
         setAdminsError(result.error || 'Unable to remove admin.')
         return
       }
+      setAdminIssue(null)
       setAdminsMessage(`${admin.email} no longer has admin access.`)
       await fetchAdmins()
     } catch {
@@ -1618,6 +1681,43 @@ export default function AdminPanel() {
                 )}
                 {adminsMessage && (
                   <p role="status" style={{ marginBottom: '16px', padding: '10px 12px', color: '#2F7F75', background: 'rgba(47,127,117,.1)', border: '1px solid rgba(47,127,117,.35)', borderRadius: '7px', fontSize: '13px' }}>{adminsMessage}</p>
+                )}
+
+                {adminIssue && (
+                  <div role="alert" style={{ marginBottom: '16px', padding: '14px', borderRadius: '9px', border: '1px solid rgba(212,163,115,.5)', background: 'rgba(212,163,115,.1)' }}>
+                    <p style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                      {adminIssue.code === 'already_admin' ? 'This account is already an admin' : 'This email already has an account'}
+                    </p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.6' }}>
+                      {adminIssue.account?.email}
+                      {adminIssue.account?.providers?.length ? ` · ${adminIssue.account.providers.join(', ')} sign-in` : ''}
+                      {adminIssue.code === 'existing_account'
+                        ? ' — promote the existing account instead of creating a duplicate.'
+                        : ' — reset the password or remove admin access below.'}
+                    </p>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {adminIssue.code === 'existing_account' && (
+                        <button type="button" onClick={() => handlePromoteAdmin(adminIssue.account)} disabled={adminActionBusy} style={adminActionStyle('#2F7F75')}>
+                          <FiShield size={12} /> {adminActionBusy ? 'Promoting...' : 'Promote to admin'}
+                        </button>
+                      )}
+                      {adminIssue.code === 'already_admin' && (
+                        <>
+                          <button type="button" onClick={() => handleSendAdminReset(adminIssue.account)} disabled={adminActionBusy} style={adminActionStyle('#D4A373')}>
+                            <FiMail size={12} /> {adminActionBusy ? 'Sending...' : 'Send password reset'}
+                          </button>
+                          {adminIssue.account?.role === ADMIN_ROLE && (
+                            <button type="button" onClick={() => handleRevokeAdmin(adminIssue.account)} disabled={adminActionBusy} style={adminActionStyle('#E24B4A')}>
+                              <FiTrash2 size={12} /> Remove admin
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <button type="button" onClick={() => setAdminIssue(null)} disabled={adminActionBusy} style={adminActionStyle('#8A8A8A')}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 <div style={{ border: '1px solid var(--border)', borderRadius: '10px', padding: '18px', marginBottom: '24px' }}>
