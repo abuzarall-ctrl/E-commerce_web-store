@@ -407,7 +407,7 @@ export default function AdminPanel() {
         return
       }
       setAdminForm({ fullName: '', email: '', password: '' })
-      setAdminsMessage(`${result.admin?.email || 'Admin'} can now sign in at /admin/login and must set up two-factor authentication.`)
+      setAdminsMessage(`${result.admin?.email || 'Admin'} can now sign in at /admin/login.`)
       await fetchAdmins()
     } catch {
       setAdminsError('Network error creating admin.')
@@ -418,7 +418,7 @@ export default function AdminPanel() {
 
   async function handlePromoteAdmin(account) {
     if (!account?.id) return
-    if (!confirm(`Promote ${account.email} to admin? They keep their current sign-in method and must set up two-factor authentication on next login.`)) return
+    if (!confirm(`Promote ${account.email} to admin? They keep their current sign-in method.`)) return
     setAdminActionBusy(true)
     setAdminsError('')
     setAdminsMessage('')
@@ -436,7 +436,7 @@ export default function AdminPanel() {
       }
       setAdminIssue(null)
       setAdminForm({ fullName: '', email: '', password: '' })
-      setAdminsMessage(`${result.admin?.email || account.email} is now an admin. They must set up two-factor authentication on next login.`)
+      setAdminsMessage(`${result.admin?.email || account.email} is now an admin.`)
       await fetchAdmins()
     } catch {
       setAdminsError('Network error promoting account.')
