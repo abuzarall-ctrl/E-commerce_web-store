@@ -118,14 +118,22 @@ export default function ProductDetailPage() {
       <style>{`
         .product-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 64px; align-items: start; }
         .product-img-wrap { height: 480px !important; }
+        @media (max-width: 1024px) {
+          .product-detail-grid { gap: 32px !important; }
+          .product-img-wrap { height: 400px !important; }
+        }
         @media (max-width: 768px) {
           .product-detail-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
-          .product-img-wrap { height: 320px !important; }
-          .product-detail-pad { padding: 20px 16px !important; }
+          .product-img-wrap { height: 340px !important; }
+          .product-detail-pad { padding: 24px 16px !important; }
         }
         @media (max-width: 480px) {
-          .product-img-wrap { height: 260px !important; }
+          .product-img-wrap { height: 280px !important; }
           .related-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+        @media (max-width: 360px) {
+          .product-img-wrap { height: 240px !important; }
+          .related-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
 

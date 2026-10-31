@@ -609,3 +609,17 @@
 .auth-visual-brand, .auth-visual-tagline, .auth-visual-tagline b { color: #f5f2e9 !important; }.auth-visual-eyebrow { color: #a9e2d3 !important; }.auth-visual-note { color: #cde4de !important; }
 .auth-divider::before, .auth-divider::after, .auth-note { border-color: var(--border); }.auth-success-icon { background: color-mix(in srgb, var(--accent) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 28%, transparent); color: var(--accent); }
 [data-theme="light"] .auth-card { background: #fff; box-shadow: 0 14px 44px rgba(24,51,49,.07); }
+
+/* Narrow phones: keep the card comfortable edge-to-edge. */
+@media (max-width: 420px) {
+  .auth-main { padding: 24px 12px 16px; }
+  .auth-shell { max-width: 100%; }
+  .auth-card { padding: 22px 16px 20px; border-radius: 12px; margin-top: 20px; }
+  .auth-h1 { font-size: 21px; }
+  .auth-sub { font-size: 13px; margin-bottom: 22px; }
+  .auth-fields { gap: 14px; }
+  .auth-foot { padding: 26px 0 6px; font-size: 10px; letter-spacing: 2px; }
+  .auth-success { padding: 6px 0 2px; }
+  .auth-success-icon { width: 58px; height: 58px; margin-bottom: 16px; }
+  .auth-mfa-qr { width: 148px; height: 148px; }
+}

@@ -33,16 +33,17 @@ export default function Footer() {
   const whatsappDigits = settings.whatsapp.replace(/[^\d]/g, '')
 
   return (
-    <footer style={{
+    <footer className="site-footer" style={{
       background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface2) 100%)',
       borderTop: '1px solid var(--border)',
       paddingTop: '64px',
       marginTop: 'auto'
     }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
+      <div className="footer-inner" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px' }}>
 
         {/* Top grid */}
         <motion.div
+          className="footer-grid"
           variants={stagger}
           initial="hidden"
           whileInView="visible"
@@ -55,7 +56,7 @@ export default function Footer() {
           }}>
 
           {/* Brand */}
-          <motion.div variants={fadeUp}>
+          <motion.div className="footer-brand" variants={fadeUp}>
             <div onClick={() => router.push('/')} style={{ cursor: 'pointer', marginBottom: '16px' }}>
               <span style={{ fontSize: '24px', fontWeight: '800', color: 'var(--accent)', letterSpacing: '-0.5px' }}>
                 Abuzar<span style={{ color: 'var(--text-primary)' }}>Store</span>
@@ -124,9 +125,9 @@ export default function Footer() {
                     <Icon size={13} color="var(--accent)" />
                   </div>
                   {href ? (
-                    <a href={href} style={{ fontSize: '13px', color: 'var(--text-faint)', textDecoration: 'none' }}>{text}</a>
+                    <a className="footer-contact-text" href={href} style={{ fontSize: '13px', color: 'var(--text-faint)', textDecoration: 'none' }}>{text}</a>
                   ) : (
-                    <span style={{ fontSize: '13px', color: 'var(--text-faint)' }}>{text}</span>
+                    <span className="footer-contact-text" style={{ fontSize: '13px', color: 'var(--text-faint)' }}>{text}</span>
                   )}
                 </div>
               ))}

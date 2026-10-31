@@ -57,6 +57,7 @@ export default function ProductCard({ product }) {
 
   return (
     <motion.div
+      className="product-card"
       whileHover={{ y: -6 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => router.push(`/product/${product.id}`)}
@@ -78,7 +79,7 @@ export default function ProductCard({ product }) {
       }}>
 
       {/* Image */}
-      <div style={{ position: 'relative', overflow: 'hidden', height: '220px' }}>
+      <div className="product-card-media" style={{ position: 'relative', overflow: 'hidden', height: '220px' }}>
         <motion.div
           whileHover={{ scale: 1.07 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -94,6 +95,7 @@ export default function ProductCard({ product }) {
 
         {product.discount > 0 && (
           <motion.span
+            className="discount-badge"
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             style={{
@@ -108,7 +110,7 @@ export default function ProductCard({ product }) {
           </motion.span>
         )}
 
-        <span style={{
+        <span className="stock-badge" style={{
           position: 'absolute', top: '10px', right: '10px',
           background: stockColor[product.stock_status] || 'var(--badge-green)',
           color: stockTextColor[product.stock_status] || 'var(--badge-green-text)',
@@ -124,6 +126,7 @@ export default function ProductCard({ product }) {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.85 }}
           onClick={handleToggleWishlist}
+          className="wishlist-btn"
           style={{
             position: 'absolute', bottom: '10px', right: '10px',
             width: '32px', height: '32px', borderRadius: '50%',
@@ -138,15 +141,15 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* Info */}
-      <div style={{ padding: '14px' }}>
-        <p style={{
+      <div className="product-card-body" style={{ padding: '14px' }}>
+        <p className="product-card-category" style={{
           fontSize: '11px', color: 'var(--accent)',
           textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px'
         }}>
           {product.category}
         </p>
 
-        <h3 style={{
+        <h3 className="product-card-title" style={{
           fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)',
           marginBottom: '8px',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
@@ -154,18 +157,19 @@ export default function ProductCard({ product }) {
           {product.name}
         </h3>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <span style={{ fontSize: '17px', fontWeight: '700', color: 'var(--accent)' }}>
+        <div className="product-card-price" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <span className="price-now" style={{ fontSize: '17px', fontWeight: '700', color: 'var(--accent)' }}>
             Rs. {Math.round(discountedPrice).toLocaleString()}
           </span>
           {product.discount > 0 && (
-            <span style={{ fontSize: '13px', color: 'var(--text-faint)', textDecoration: 'line-through' }}>
+            <span className="price-old" style={{ fontSize: '13px', color: 'var(--text-faint)', textDecoration: 'line-through' }}>
               Rs. {product.price.toLocaleString()}
             </span>
           )}
         </div>
 
         <motion.button
+          className="add-btn"
           whileHover={{ scale: cartBlocked ? 1 : 1.02 }}
           whileTap={{ scale: cartBlocked ? 1 : 0.96 }}
           disabled={outOfStock}

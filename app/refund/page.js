@@ -59,11 +59,25 @@ function RefundContent() {
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        .refund-inner { padding: 48px 24px; }
+        @media (max-width: 768px) {
+          .refund-inner { padding: 32px 18px !important; }
+          .refund-title { font-size: 25px !important; }
+          .refund-form { padding: 20px !important; }
+        }
+        @media (max-width: 420px) {
+          .refund-inner { padding: 24px 14px !important; }
+          .refund-form { padding: 16px !important; }
+          .refund-success { padding: 34px 18px !important; }
+        }
+      `}</style>
       <Navbar />
 
-      <div style={{ maxWidth: '720px', margin: '0 auto', width: '100%', padding: '48px 24px', flex: 1 }}>
+      <div className="refund-inner" style={{ maxWidth: '720px', margin: '0 auto', width: '100%', padding: '48px 24px', flex: 1 }}>
         {success ? (
           <motion.div
+            className="refund-success"
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             style={{
               background: 'var(--bg-surface)', border: '1px solid var(--border)',
@@ -93,7 +107,7 @@ function RefundContent() {
               <p style={{ fontSize: '12px', letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: '700', marginBottom: '8px' }}>
                 Customer support
               </p>
-              <h1 style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
+              <h1 className="refund-title" style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '8px' }}>
                 Refund request
               </h1>
               <p style={{ fontSize: '14px', color: 'var(--text-faint)', lineHeight: '1.7', marginBottom: '28px' }}>
@@ -103,6 +117,7 @@ function RefundContent() {
             </motion.div>
 
             <motion.form
+              className="refund-form"
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               onSubmit={handleSubmit}
               style={{

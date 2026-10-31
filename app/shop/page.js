@@ -87,10 +87,19 @@ useEffect(() => {
       <style>{`
         .shop-categories { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
         .shop-categories::-webkit-scrollbar { display: none; }
+        @media (max-width: 1024px) {
+          .shop-filters-row { flex-wrap: wrap; }
+        }
+        @media (max-width: 900px) {
+          .shop-header { padding: 28px 20px 22px !important; }
+          .shop-inner-pad { padding: 22px 20px !important; }
+        }
         @media (max-width: 640px) {
+          .shop-header { padding: 22px 16px 18px !important; }
           .shop-inner-pad { padding: 20px 16px !important; }
           .shop-heading { font-size: 22px !important; }
-          .shop-filters-row { flex-direction: column !important; }
+          .shop-filters-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+          .shop-categories { width: 100%; }
           .shop-stock-select { width: 100% !important; }
           .product-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
         }
@@ -103,7 +112,7 @@ useEffect(() => {
         <Navbar />
 
         {/* Header band */}
-        <div style={{
+        <div className="shop-header" style={{
           background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-primary) 100%)',
           borderBottom: '1px solid var(--border)',
           padding: '36px 24px 28px'
@@ -251,7 +260,7 @@ useEffect(() => {
                   key={i}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
                   style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <div className="skeleton" style={{ height: '220px' }} />
+                  <div className="skeleton product-card-media" style={{ height: '220px' }} />
                   <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-surface)' }}>
                     <div className="skeleton" style={{ height: '11px', width: '55%', borderRadius: '4px' }} />
                     <div className="skeleton" style={{ height: '15px', borderRadius: '4px' }} />

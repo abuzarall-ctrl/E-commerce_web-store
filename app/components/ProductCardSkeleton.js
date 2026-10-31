@@ -12,7 +12,7 @@ export default function ProductCardSkeleton({ index = 0 }) {
         border: '1px solid var(--border)',
         background: 'var(--bg-surface)'
       }}>
-      <div className="skeleton" style={{ height: '220px', borderRadius: 0 }} />
+      <div className="skeleton product-card-media" style={{ height: '220px', borderRadius: 0 }} />
       <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div className="skeleton" style={{ height: '11px', width: '55%', borderRadius: '4px' }} />
         <div className="skeleton" style={{ height: '15px', borderRadius: '4px' }} />

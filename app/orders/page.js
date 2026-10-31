@@ -62,7 +62,7 @@ function OrderTimeline({ status }) {
               }}>
                 {done ? <FiCheck size={12} /> : index + 1}
               </div>
-              <span style={{
+              <span className="order-timeline-label" style={{
                 fontSize: '10px', fontWeight: done ? '700' : '500',
                 color: done ? 'var(--text-muted)' : 'var(--text-faint)',
                 textAlign: 'center', whiteSpace: 'nowrap'
@@ -206,12 +206,26 @@ export default function OrdersPage() {
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .orders-inner { padding: 32px 20px !important; }
+        }
+        @media (max-width: 640px) {
+          .orders-inner { padding: 26px 16px !important; }
+          .orders-title { font-size: 23px !important; }
+          .order-head { padding: 16px !important; gap: 12px !important; }
+          .order-body { padding: 16px !important; }
+        }
+        @media (max-width: 380px) {
+          .order-timeline-label { font-size: 9px !important; }
+        }
+      `}</style>
       <Navbar />
 
-      <div style={{ maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
+      <div className="orders-inner" style={{ maxWidth: '800px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
 
         <motion.div variants={fadeUp} initial="hidden" animate="visible">
-          <h1 style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>My Orders</h1>
+          <h1 className="orders-title" style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>My Orders</h1>
           <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '32px' }}>
             {orders.length === 0 ? 'No orders yet' : `${orders.length} order${orders.length > 1 ? 's' : ''} placed`}
           </p>
@@ -258,6 +272,7 @@ export default function OrdersPage() {
                   {/* Order header */}
                   <div
                     onClick={() => setExpanded(isOpen ? null : order.id)}
+                    className="order-head"
                     style={{
                       padding: '20px 24px', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap'
@@ -306,7 +321,7 @@ export default function OrdersPage() {
 
                   {/* Expanded details */}
                   {isOpen && (
-                    <div style={{ borderTop: '1px solid var(--border)', padding: '20px 24px', background: 'var(--bg-surface2)' }}>
+                    <div className="order-body" style={{ borderTop: '1px solid var(--border)', padding: '20px 24px', background: 'var(--bg-surface2)' }}>
 
                       <OrderTimeline status={order.status} />
 

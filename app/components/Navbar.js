@@ -133,13 +133,13 @@ export default function Navbar() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           style={{ cursor: 'pointer' }}>
-          <span style={{ fontSize: '22px', fontWeight: '800', color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+          <span className="nav-logo" style={{ fontSize: '22px', fontWeight: '800', color: 'var(--accent)', letterSpacing: '-0.5px' }}>
             Abuzar<span style={{ color: 'var(--text-primary)' }}>Store</span>
           </span>
         </motion.div>
 
         {/* Desktop Links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+        <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
           <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}
             className="desktop-nav">
             <NavLink label="Home" onClick={() => navigate('/')} />
@@ -212,6 +212,7 @@ export default function Navbar() {
               setCartLoaded(true)
               setCartOpen(true)
             }}
+            className="nav-cart-btn"
             style={{
               background: 'rgba(212, 163, 115, 0.12)',
               backdropFilter: 'blur(10px)',
@@ -234,7 +235,7 @@ export default function Navbar() {
               e.currentTarget.style.borderColor = 'var(--border)'
             }}>
             <FiShoppingCart size={15} />
-            Cart
+            <span className="nav-cart-label">Cart</span>
             <AnimatePresence mode="wait">
               {cartCount > 0 && (
                 <motion.span
@@ -327,7 +328,7 @@ export default function Navbar() {
               top: '64px',
               zIndex: 999
             }}>
-            <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="nav-mobile-panel" style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
                 { label: 'Home', path: '/' },
                 { label: 'Shop', path: '/shop' },
@@ -364,9 +365,23 @@ export default function Navbar() {
       </AnimatePresence>
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .desktop-nav { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
+          .mobile-menu-btn { display: flex !important; min-height: 44px; }
+        }
+        @media (max-width: 640px) {
+          .site-navbar { padding: 0 16px !important; }
+          .nav-logo { font-size: 19px !important; }
+          .nav-actions { gap: 16px !important; }
+          .nav-cart-btn { padding: 8px 12px !important; font-size: 13px !important; }
+        }
+        @media (max-width: 420px) {
+          .site-navbar { padding: 0 12px !important; }
+          .nav-actions { gap: 12px !important; }
+          .nav-logo { font-size: 18px !important; }
+          .nav-cart-label { display: none !important; }
+          .nav-cart-btn { padding: 8px !important; }
+          .nav-mobile-panel { padding: 14px 16px !important; }
         }
       `}</style>
 

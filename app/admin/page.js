@@ -886,6 +886,17 @@ export default function AdminPanel() {
         @media (max-width: 560px) {
           .admin-grid { grid-template-columns: repeat(2, 1fr); }
         }
+        @media (max-width: 640px) {
+          .admin-content { padding: 16px 12px; }
+          .admin-topbar { padding: 10px 12px; gap: 8px; }
+          .admin-topbar h1 { font-size: 15px; }
+          .admin-topbar p { font-size: 11px; }
+          .admin-icon-btn { height: 36px; padding: 0 9px; }
+        }
+        @media (max-width: 380px) {
+          .admin-grid { grid-template-columns: 1fr; }
+          .admin-icon-btn { height: 34px; }
+        }
       `}</style>
 
       <div

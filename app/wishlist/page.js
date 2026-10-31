@@ -30,9 +30,24 @@ export default function WishlistPage() {
 
   return (
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <style>{`
+        @media (max-width: 900px) {
+          .wishlist-header { padding: 28px 20px 22px !important; }
+          .wishlist-inner { padding: 22px 20px !important; }
+        }
+        @media (max-width: 640px) {
+          .wishlist-header { padding: 22px 16px 18px !important; }
+          .wishlist-inner { padding: 20px 16px !important; }
+          .wishlist-title { font-size: 23px !important; }
+          .wishlist-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+        }
+        @media (max-width: 360px) {
+          .wishlist-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <Navbar />
 
-      <div style={{
+      <div className="wishlist-header" style={{
         background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-primary) 100%)',
         borderBottom: '1px solid var(--border)',
         padding: '36px 24px 28px'
@@ -44,6 +59,7 @@ export default function WishlistPage() {
             <FiHeart size={12} /> Saved for later
           </motion.p>
           <motion.h1
+            className="wishlist-title"
             initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
             style={{ fontSize: '30px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px', letterSpacing: '-0.5px' }}>
             Your Wishlist
@@ -68,7 +84,7 @@ export default function WishlistPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '28px 24px', flex: 1 }}>
+      <div className="wishlist-inner" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '28px 24px', flex: 1 }}>
         {items.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -91,6 +107,7 @@ export default function WishlistPage() {
         ) : (
           <AnimatePresence mode="popLayout">
             <motion.div
+              className="wishlist-grid"
               variants={containerVariants}
               initial="hidden"
               animate="visible"

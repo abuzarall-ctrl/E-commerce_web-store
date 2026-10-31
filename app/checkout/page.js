@@ -422,7 +422,8 @@ export default function CheckoutPage() {
               borderRadius: '24px', padding: '40px 36px',
               maxWidth: '500px', width: '100%', textAlign: 'center',
               boxShadow: '0 32px 80px rgba(0,0,0,0.4)'
-            }}>
+            }}
+            className="checkout-success-card">
 
             <motion.div
               initial={{ scale: 0, rotate: -180 }} animate={{ scale: 1, rotate: 0 }}
@@ -603,22 +604,32 @@ export default function CheckoutPage() {
   return (
     <>
       <style>{`
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
+          .checkout-grid { grid-template-columns: 1fr 360px !important; gap: 24px !important; }
+        }
+        @media (max-width: 900px) {
           .checkout-grid { grid-template-columns: 1fr !important; }
           .order-summary-sticky { position: relative !important; top: auto !important; }
           .payment-grid { grid-template-columns: 1fr 1fr !important; }
         }
-        @media (max-width: 480px) {
-          .checkout-form-pad { padding: 18px !important; }
+        @media (max-width: 640px) {
+          .checkout-page-pad { padding: 24px 16px !important; }
+          .checkout-form-pad { padding: 20px !important; }
           .checkout-heading { font-size: 22px !important; }
-          .payment-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+          .checkout-success-card { padding: 30px 20px !important; }
+        }
+        @media (max-width: 420px) {
+          .checkout-page-pad { padding: 20px 14px !important; }
+          .checkout-form-pad { padding: 16px !important; }
+          .payment-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+          .order-summary-panel { padding: 18px !important; }
         }
       `}</style>
 
       <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Navbar />
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
+        <div className="checkout-page-pad" style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', padding: '40px 24px', flex: 1 }}>
 
           <motion.div variants={fadeUp} initial="hidden" animate="visible">
             <h1 className="checkout-heading" style={{ fontSize: '28px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '6px' }}>
@@ -911,7 +922,7 @@ export default function CheckoutPage() {
             {/* ── Order Summary Panel ──────────────────────────────────────── */}
             <motion.div
               variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.15 }}
-              className="order-summary-sticky"
+              className="order-summary-sticky order-summary-panel"
               style={{
                 background: 'var(--bg-surface)', border: '1px solid var(--border)',
                 borderRadius: '16px', padding: '24px',

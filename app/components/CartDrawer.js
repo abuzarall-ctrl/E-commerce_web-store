@@ -72,7 +72,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         }}>
 
         {/* Header */}
-        <div style={{
+        <div className="cart-drawer-header" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 24px',
           borderBottom: '1px solid var(--border)'
@@ -122,7 +122,7 @@ export default function CartDrawer({ isOpen, onClose }) {
           const remaining = Math.max(0, FREE_SHIPPING - total)
           const pct = Math.min(100, Math.round((total / FREE_SHIPPING) * 100))
           return (
-            <div style={{
+            <div className="cart-drawer-shipping" style={{
               padding: '12px 24px',
               borderBottom: '1px solid var(--border)',
               background: 'var(--glass-bg)'
@@ -154,7 +154,7 @@ export default function CartDrawer({ isOpen, onClose }) {
         })()}
 
         {/* Items */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="cart-drawer-body" style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {items.length === 0 ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', paddingTop: '80px' }}>
               <FiShoppingBag size={48} color="var(--text-faint)" style={{ opacity: 0.4 }} />
@@ -181,6 +181,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
+                className="cart-item"
                 style={{
                   display: 'flex', gap: '14px', alignItems: 'flex-start',
                   background: 'var(--bg-surface2)',
@@ -190,6 +191,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                 }}>
                 <div
                   onClick={() => { onClose(); router.push(`/product/${item.id}`) }}
+                  className="cart-item-image"
                   style={{ position: 'relative', width: '72px', height: '72px', flexShrink: 0, cursor: 'pointer' }}>
                   <Image
                     src={item.image_url || '/placeholder.png'}
@@ -210,7 +212,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                   </p>
                   <p style={{ fontSize: '11px', color: 'var(--accent)', marginBottom: '8px' }}>{item.category}</p>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                  <div className="cart-item-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
                     {/* Qty controls */}
                     <div style={{
                       display: 'flex', alignItems: 'center',
@@ -224,7 +226,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                     </div>
 
                     {/* Price */}
-                    <div style={{ textAlign: 'right' }}>
+                    <div className="cart-item-price" style={{ textAlign: 'right' }}>
                       <p style={{ fontSize: '14px', fontWeight: '700', color: 'var(--accent)' }}>
                         Rs. {(Math.round(discounted(item)) * item.qty).toLocaleString()}
                       </p>
@@ -240,6 +242,7 @@ export default function CartDrawer({ isOpen, onClose }) {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => remove(item.id)}
+                      className="cart-item-remove"
                       style={{
                         background: 'transparent', border: '1px solid var(--border)',
                         color: 'var(--text-faint)', borderRadius: '6px',
@@ -267,7 +270,7 @@ export default function CartDrawer({ isOpen, onClose }) {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div style={{
+          <div className="cart-drawer-footer" style={{
             padding: '20px 24px',
             borderTop: '1px solid var(--border)',
             background: 'var(--glass-bg)',
